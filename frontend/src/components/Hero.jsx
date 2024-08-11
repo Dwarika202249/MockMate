@@ -5,10 +5,10 @@ const Hero = () => {
   return (
     <section className="mx-10 flex items-center justify-between py-16 px-4">
       <div className="flex-1 mr-8">
-        <h1 className="text-4xl font-bold mb-4">
+        <h1 className="text-5xl font-bold mb-8">
           Welcome to MockMate
         </h1>
-        <p className="text-lg text-gray-700 mb-6">
+        <p className="text-lg text-gray-700 mb-8">
           Enhance your interview skills with personalized mock interviews, experts like AI feedback, and detailed progress tracking. Start your journey towards acing your next interview today!
         </p>
         <a
