@@ -29,7 +29,7 @@ const Dashboard = () => {
       <h2 className="text-2xl font-bold mb-4">Welcome to your Dashboard, {userData.name}!</h2>
       <p className="text-lg">Here is an overview of your account:</p>
       <div className="bg-white p-4 rounded-lg shadow-md mt-4">
-        <h3 className="text-xl font-semibold">User Details:</h3>
+        <h3 className="text-xl font-semibold mb-2">User Details:</h3>
         <p><strong>Email:</strong> {userData.email}</p>
         {/* Add more user details or statistics here */}
       </div>

@@ -6,6 +6,8 @@ const DashboardLayout = () => {
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <div className="w-64 bg-indigo-900 text-white p-4 shadow-md">
+      <h2 className="text-3xl font-bold mb-6">
+      <Link to="/">MockMate</Link></h2>
         <nav>
           <ul>
             <li className="mb-4">

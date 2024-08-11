@@ -8,6 +8,7 @@ import Settings from './components/Settings';
 import DashboardLayout from './components/DashboardLayout';
 import Overview from './components/Overview';
 import InterviewHistory from './components/InterviewHistory'
+import HomePage from "./pages/HomePage";
 
 const PrivateRoute = ({ element }) => {
   return isAuthenticated() ? element : <Navigate to="/login" />;
@@ -21,9 +22,13 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route
+        {/* <Route
           path="/"
           element={<PublicRoute element={<Login />} restricted={true} />}
+        /> */}
+        <Route
+          path="/"
+          element={<HomePage />}
         />
         <Route
           path="/login"
