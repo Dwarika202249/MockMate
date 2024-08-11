@@ -9,6 +9,7 @@ import DashboardLayout from './components/DashboardLayout';
 import Overview from './components/Overview';
 import InterviewHistory from './components/InterviewHistory'
 import HomePage from "./pages/HomePage";
+import InterviewPage from './pages/InterviewPage';
 
 const PrivateRoute = ({ element }) => {
   return isAuthenticated() ? element : <Navigate to="/login" />;
@@ -44,6 +45,7 @@ function App() {
           <Route path="interview-history" element={<InterviewHistory />} />
           <Route path="settings" element={<Settings />} />
         </Route>
+        <Route path="/interview/:interviewId" element={<InterviewPage />} />
       </Routes>
     </Router>
   );

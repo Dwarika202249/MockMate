@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import GoogleAuth from './GoogleAuth'; 
 
@@ -34,6 +34,9 @@ const Register = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form onSubmit={onSubmit} className="bg-white p-6 rounded-lg shadow-md w-96">
+      <h1 className="text-3xl text-center font-bold mb-5 text-indigo-900">
+          <Link to="/">MockMate</Link>
+        </h1>
         <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">

@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const authRoutes = require("./routes/auth");
+const interviewRoutes = require('./routes/interview');
 const cors = require("cors");
 
 dotenv.config();
@@ -13,6 +14,7 @@ app.use(express.json());
 
 //routes
 app.use("/api/auth", authRoutes);
+app.use('/api/interview', interviewRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)

@@ -117,5 +117,35 @@ router.get('/user', userAuth, async (req, res) => {
   }
 });
 
+router.put('/update-profile', userAuth, async (req, res) => {
+  const { name, email, password } = req.body;
+  
+  try {
+    // Fetch the user by ID
+    let user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Update user fields
+    if (name) user.name = name;
+    if (email) user.email = email;
+
+    // If password is provided, hash it before saving
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    await user.save();
+
+    res.json({ msg: 'Profile updated successfully', user });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
+
 
 module.exports = router;
