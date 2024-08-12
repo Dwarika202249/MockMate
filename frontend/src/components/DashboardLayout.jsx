@@ -14,7 +14,7 @@ const DashboardLayout = () => {
               <Link to="/dashboard" className="hover:bg-indigo-700 p-2 block rounded">Dashboard</Link>
             </li>
             <li className="mb-4">
-              <Link to="/dashboard/overview" className="hover:bg-indigo-700 p-2 block rounded">Overview</Link>
+              <Link to="/dashboard/overview" className="hover:bg-indigo-700 p-2 block rounded">Progress</Link>
             </li>
             <li className="mb-4">
               <Link to="/dashboard/interview-history" className="hover:bg-indigo-700 p-2 block rounded">Interview History</Link>

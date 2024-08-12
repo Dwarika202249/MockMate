@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const userAuth = require("../middleware/userAuth");
+const Feedback = require('../models/FeedbackSchema');
 require("dotenv").config();
 
 // Initialize Google Generative AI with your API key
@@ -59,30 +60,30 @@ router.post("/start", userAuth, async (req, res) => {
 });
 
 // Route to fetch interview by ID
-router.get("/:interviewId", userAuth, async (req, res) => {
-  try {
-    const interviewId = req.params.interviewId;
+// router.get("/:interviewId", userAuth, async (req, res) => {
+//   try {
+//     const interviewId = req.params.interviewId;
 
-    // Find the interview by ID
-    const interview = await Interview.findById(interviewId);
+//     // Find the interview by ID
+//     const interview = await Interview.findById(interviewId);
 
-    // Check if the interview exists
-    if (!interview) {
-      return res.status(404).json({ msg: "Interview not found" });
-    }
+//     // Check if the interview exists
+//     if (!interview) {
+//       return res.status(404).json({ msg: "Interview not found" });
+//     }
 
-    // Check if the logged-in user is the owner of the interview
-    if (interview.user.toString() !== req.user.id) {
-      return res.status(403).json({ msg: "Unauthorized" });
-    }
+//     // Check if the logged-in user is the owner of the interview
+//     if (interview.user.toString() !== req.user.id) {
+//       return res.status(403).json({ msg: "Unauthorized" });
+//     }
 
-    // Send the interview data as a response
-    res.json(interview);
-  } catch (error) {
-    console.error("Error fetching interview:", error);
-    res.status(500).send("Internal Server Error");
-  }
-});
+//     // Send the interview data as a response
+//     res.json(interview);
+//   } catch (error) {
+//     console.error("Error fetching interview:", error);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
 
 router.post("/submit", userAuth, async (req, res) => {
   const { interviewId, answers } = req.body;
@@ -130,6 +131,17 @@ router.post("/submit", userAuth, async (req, res) => {
       })
       .join("\n\n");
 
+      // Save feedback to the database
+    const newFeedback = new Feedback({
+      interviewId,
+      questions: interview.questions,
+      answers: Object.values(answers),
+      feedback: formattedFeedback,
+      user: req.user.id
+    });
+    
+    await newFeedback.save()
+
     // Send the feedback as response
     res.json({ feedback: formattedFeedback });
   } catch (error) {
@@ -138,7 +150,34 @@ router.post("/submit", userAuth, async (req, res) => {
   }
 });
 
+router.get('/history', userAuth, async (req, res) => {
+  try {
+    // Fetch all interviews for the logged-in user, with associated feedback
+    // const interviews = await Interview.find({ user: req.user.id }).populate('feedback');
+    const interviews = await Interview.find({ user: req.user.id });
+    
+    res.json(interviews);
+  } catch (error) {
+    console.error('Error fetching interview history:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
+// Specific Interview Details Route
+router.get('/:interviewId', userAuth, async (req, res) => {
+  try {
+    const interviewId = req.params.interviewId;
+    const interview = await Interview.findById(interviewId);
+    if (!interview) {
+      return res.status(404).json({ msg: 'Interview not found' });
+    }
 
+    const feedback = await Feedback.findOne({ interviewId });
+    res.json({ interview, feedback });
+  } catch (error) {
+    console.error('Error fetching interview:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 module.exports = router;

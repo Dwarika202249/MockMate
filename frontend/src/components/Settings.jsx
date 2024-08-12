@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from "axios";
 
 const Settings = () => {
@@ -6,6 +7,7 @@ const Settings = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -50,6 +52,11 @@ const Settings = () => {
       setMessage("Error updating profile. Please try again.");
       console.error("Error updating profile:", error);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // Remove token from localStorage
+    navigate("/login"); // Redirect to login page
   };
 
   return (
@@ -105,6 +112,12 @@ const Settings = () => {
           Save Changes
         </button>
       </form>
+      <button
+        onClick={handleLogout}
+        className="bg-red-500 text-white py-2 px-4 mt-4 rounded hover:bg-red-600"
+      >
+        Logout
+      </button>
     </div>
   );
 };
