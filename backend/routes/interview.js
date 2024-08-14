@@ -100,6 +100,7 @@ router.post("/submit", userAuth, async (req, res) => {
 
     // Format feedback
     const formattedFeedback = feedback
+      .replace(/\*\s*/g, "")
       .split("\n\n")
       .map((section) => {
         if (section.includes("Q")) {
