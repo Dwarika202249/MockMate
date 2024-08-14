@@ -1,13 +1,35 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Outlet, Link } from 'react-router-dom';
 
 const DashboardLayout = () => {
+  
+  const sidebarVariants = {
+    initial: { x: '-10%', opacity: 0 },
+    animate: { x: 0, opacity: 1 },
+    exit: { x: '-50%', opacity: 0 },
+  };
+
+  const contentVariants = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <div className="w-64 bg-indigo-900 text-white p-4 shadow-md">
-      <h2 className="text-3xl font-bold mb-6">
-      <Link to="/">MockMate</Link></h2>
+      <motion.div
+        className="w-64 bg-indigo-900 text-white p-4 shadow-md"
+        variants={sidebarVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        transition={{ duration: 0.5, type: 'spring', stiffness: 60 }}
+      >
+        <h2 className="text-3xl font-bold mb-6">
+          <Link to="/">MockMate</Link>
+        </h2>
         <nav>
           <ul>
             <li className="mb-4">
@@ -24,12 +46,19 @@ const DashboardLayout = () => {
             </li>
           </ul>
         </nav>
-      </div>
+      </motion.div>
 
       {/* Content Area */}
-      <div className="flex-1 bg-gray-100 p-8">
+      <motion.div
+        className="flex-1 bg-gray-100 p-8"
+        variants={contentVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        transition={{ duration: 0.5 }}
+      >
         <Outlet />
-      </div>
+      </motion.div>
     </div>
   );
 };

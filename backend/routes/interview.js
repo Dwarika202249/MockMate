@@ -1,15 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const mongoose = require("mongoose");
 const userAuth = require("../middleware/userAuth");
 const Feedback = require('../models/FeedbackSchema');
 require("dotenv").config();
+const Interview = require("../models/InterviewSchema");
 
 // Initialize Google Generative AI with your API key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-const Interview = require("../models/InterviewSchema");
 
 // Route to generate interview questions
 router.post("/start", userAuth, async (req, res) => {
@@ -59,36 +60,16 @@ router.post("/start", userAuth, async (req, res) => {
   }
 });
 
-// Route to fetch interview by ID
-// router.get("/:interviewId", userAuth, async (req, res) => {
-//   try {
-//     const interviewId = req.params.interviewId;
-
-//     // Find the interview by ID
-//     const interview = await Interview.findById(interviewId);
-
-//     // Check if the interview exists
-//     if (!interview) {
-//       return res.status(404).json({ msg: "Interview not found" });
-//     }
-
-//     // Check if the logged-in user is the owner of the interview
-//     if (interview.user.toString() !== req.user.id) {
-//       return res.status(403).json({ msg: "Unauthorized" });
-//     }
-
-//     // Send the interview data as a response
-//     res.json(interview);
-//   } catch (error) {
-//     console.error("Error fetching interview:", error);
-//     res.status(500).send("Internal Server Error");
-//   }
-// });
-
+// Route to submit interview answers and get feedback
 router.post("/submit", userAuth, async (req, res) => {
   const { interviewId, answers } = req.body;
 
   try {
+
+    if (!mongoose.Types.ObjectId.isValid(interviewId)) {
+      return res.status(400).json({ msg: "Invalid interview ID" });
+    }
+
     // Retrieve the interview questions from the database
     const interview = await Interview.findById(interviewId);
     if (!interview) {
@@ -150,11 +131,11 @@ router.post("/submit", userAuth, async (req, res) => {
   }
 });
 
+// Route to fetch interview history for a user
 router.get('/history', userAuth, async (req, res) => {
   try {
-    // Fetch all interviews for the logged-in user, with associated feedback
-    // const interviews = await Interview.find({ user: req.user.id }).populate('feedback');
     const interviews = await Interview.find({ user: req.user.id });
+    
     
     res.json(interviews);
   } catch (error) {
@@ -163,10 +144,13 @@ router.get('/history', userAuth, async (req, res) => {
   }
 });
 
-// Specific Interview Details Route
-router.get('/:interviewId', userAuth, async (req, res) => {
+// Route to fetch specific interview details along with feedback
+router.get('/:interviewId/details', userAuth, async (req, res) => {
   try {
     const interviewId = req.params.interviewId;
+    if (!mongoose.Types.ObjectId.isValid(interviewId)) {
+      return res.status(400).json({ msg: "Invalid interview ID" });
+    }
     const interview = await Interview.findById(interviewId);
     if (!interview) {
       return res.status(404).json({ msg: 'Interview not found' });
@@ -177,6 +161,37 @@ router.get('/:interviewId', userAuth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching interview:', error);
     res.status(500).send('Internal Server Error');
+  }
+});
+
+// Route to fetch interview by ID
+router.get("/:interviewId", userAuth, async (req, res) => {
+  try {
+    const interviewId = req.params.interviewId;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(interviewId)) {
+      return res.status(400).json({ msg: "Invalid interview ID" });
+    }
+
+    // Find the interview by ID
+    const interview = await Interview.findById(interviewId);
+
+    // Check if the interview exists
+    if (!interview) {
+      return res.status(404).json({ msg: "Interview not found" });
+    }
+
+    // Check if the logged-in user is the owner of the interview
+    if (interview.user.toString() !== req.user.id) {
+      return res.status(403).json({ msg: "Unauthorized" });
+    }
+
+    // Send the interview data as a response
+    res.json(interview);
+  } catch (error) {
+    console.error("Error fetching interview:", error);
+    res.status(500).send("Internal Server Error");
   }
 });
 

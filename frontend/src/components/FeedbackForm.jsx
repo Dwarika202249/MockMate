@@ -15,8 +15,8 @@ const FeedbackForm = () => {
   };
 
   return (
-    <section className="py-16 px-4 bg-white">
-      <h2 className="text-5xl font-bold mb-12 text-center">We Value Your Feedback</h2>
+    <section className="mt-[20%] py-16 px-4 bg-white">
+      <h2 className="text-5xl font-bold mb-12 text-center text-indigo-900">We Value Your Feedback</h2>
       <div className="max-w-lg mx-auto">
         {submitted ? (
           <p className="text-center text-green-500">Thank you for your feedback! We appreciate your input.</p>

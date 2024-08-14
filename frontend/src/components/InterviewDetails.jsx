@@ -13,7 +13,7 @@ const InterviewDetails = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/interview/${interviewId}`, {
+        const response = await axios.get(`http://localhost:5000/api/interview/${interviewId}/details`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         setInterview(response.data.interview);

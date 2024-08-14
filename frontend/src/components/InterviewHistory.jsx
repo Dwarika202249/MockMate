@@ -9,6 +9,8 @@ const InterviewHistory = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
+        console.log(localStorage.getItem('token'));
+        
         const response = await axios.get('http://localhost:5000/api/interview/history', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
@@ -35,7 +37,7 @@ const InterviewHistory = () => {
             <h3 className="text-xl font-semibold mb-2">{interview.type}</h3>
             <p>{interview.details}</p>
             <p className="text-sm text-gray-600">Date: {new Date(interview.createdAt).toLocaleDateString()}</p>
-            <a href={`/history/${interview._id}`} className="text-blue-500 hover:underline">View Details</a>
+            <a href={`/history/${interview._id}/details`} className="text-blue-500 hover:underline">View Details</a>
           </div>
         )) : <div className='mt-12 flex justify-center items-center'>
           <h2 className='font-bold text-2xl'>No Interview Details</h2>
