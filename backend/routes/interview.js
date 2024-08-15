@@ -11,34 +11,49 @@ const Interview = require("../models/InterviewSchema");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-
 // Route to generate interview questions
 router.post("/start", userAuth, async (req, res) => {
   const { type, details, numQuestions, difficulty } = req.body;
 
   try {
-    const prompt = `Generate ${numQuestions} ${difficulty} interview questions for a ${type} interview that end with a question mark. Ensure each question is concise and ends with a "?" symbol, which is based on: ${details}`;
+    let questionsArray = [];
+    let attempts = 0;
+    const maxAttempts = 3;
 
-    // Generate content using Gemini API
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const questionsString = response.text().trim();
+    while (questionsArray.length < numQuestions && attempts < maxAttempts) {
+      attempts++;
 
-    // Clean and format the questions
-    let questionsArray = questionsString.split(/(?=\d+\.\s)/g); // Splitting by numbered question format
+      const prompt = `Generate ${numQuestions - questionsArray.length} additional ${difficulty} interview questions for a ${type} interview that end with a question mark. Ensure each question is concise and ends with a "?" symbol, which is based on: ${details}. Here are some existing questions: ${questionsArray.join(', ')}`;
 
-    // Remove unnecessary details, asterisks, and extra formatting
-    questionsArray = questionsArray.map((question) => {
-      return question
-        .replace(/^\d+\.\s/, "") // Remove the leading question number (e.g., "1. ")
-        .replace(/\*\s*/g, "") // Remove asterisks
-        .trim(); // Trim leading/trailing spaces
-    });
+      // Generate content using Gemini API
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const questionsString = response.text().trim();
 
-    // Filter out any non-question content
-    questionsArray = questionsArray.filter(
-      (question) => question.length > 0 && question.includes("?")
-    );
+      // Clean and format the questions
+      let newQuestionsArray = questionsString.split(/(?=\d+\.\s)/g); // Splitting by numbered question format
+
+      // Remove unnecessary details, asterisks, and extra formatting
+      newQuestionsArray = newQuestionsArray.map((question) => {
+        return question
+          .replace(/^\d+\.\s/, "") // Remove the leading question number (e.g., "1. ")
+          .replace(/\*\s*/g, "") // Remove asterisks
+          .trim(); // Trim leading/trailing spaces
+      });
+
+      // Filter out any non-question content and avoid duplicates
+      newQuestionsArray = newQuestionsArray.filter(
+        (question) => question.length > 0 && question.includes("?") && !questionsArray.includes(question)
+      );
+
+      // Add new questions to the existing array
+      questionsArray = [...questionsArray, ...newQuestionsArray];
+    }
+
+    // Check if we have the correct number of questions
+    if (questionsArray.length < numQuestions) {
+      return res.status(400).json({ msg: `Unable to generate the requested number of questions. Only ${questionsArray.length} questions could be generated.` });
+    }
 
     // Save the interview data to the database
     const newInterview = new Interview({
@@ -59,6 +74,7 @@ router.post("/start", userAuth, async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
+
 
 // Route to submit interview answers and get feedback
 router.post("/submit", userAuth, async (req, res) => {
