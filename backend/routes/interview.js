@@ -153,7 +153,6 @@ router.get('/history', userAuth, async (req, res) => {
   try {
     const interviews = await Interview.find({ user: req.user.id });
     
-    
     res.json(interviews);
   } catch (error) {
     console.error('Error fetching interview history:', error);
@@ -178,6 +177,53 @@ router.get('/:interviewId/details', userAuth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching interview:', error);
     res.status(500).send('Internal Server Error');
+  }
+});
+
+// Route to delete a specific interview
+router.delete('/:interviewId/delete', userAuth, async (req, res) => {
+  try {
+    const interviewId = req.params.interviewId;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(interviewId)) {
+      return res.status(400).json({ msg: "Invalid interview ID" });
+    }
+
+    // Find the interview by ID and delete it
+    const interview = await Interview.findByIdAndDelete(interviewId);
+
+    // Check if the interview exists
+    if (!interview) {
+      return res.status(404).json({ msg: "Interview not found" });
+    }
+
+    // Also delete related feedback
+    await Feedback.findOneAndDelete({ interviewId });
+
+    res.json({ msg: "Interview deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting interview:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// Route to cancel an interview
+router.delete('/:interviewId/cancel', async (req, res) => {
+  const { interviewId } = req.params;
+
+  try {
+    // Find and remove the interview from the database
+    const interview = await Interview.findByIdAndDelete(interviewId);
+
+    if (!interview) {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+
+    res.status(200).json({ message: 'Interview canceled successfully' });
+  } catch (error) {
+    console.error('Error canceling interview:', error);
+    res.status(500).json({ message: 'Error canceling interview' });
   }
 });
 

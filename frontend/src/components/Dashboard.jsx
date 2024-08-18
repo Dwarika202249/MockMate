@@ -52,7 +52,7 @@ const Dashboard = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Welcome to your Dashboard, <span className='uppercase text-indigo-900'>{userData.name}</span></h2>
+      <h2 className="text-2xl font-bold mb-4 capitalize">Welcome to your Dashboard, <span className='uppercase text-indigo-900'>{userData.name}</span></h2>
       <p className="text-lg">Here is an overview of your account:</p>
       <motion.div
         className="bg-white p-4 rounded-lg shadow-md mt-4"
