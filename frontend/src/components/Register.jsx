@@ -18,7 +18,7 @@ const Register = () => {
     setLoading(true);
     setError(''); // Clear previous errors
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/auth/register`, formData);
+      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/auth/register`, formData);
 
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
