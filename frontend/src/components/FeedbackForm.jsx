@@ -9,21 +9,21 @@ const FeedbackForm = () => {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    // Here you can handle the form submission, e.g., send data to a server or API
+    // Handle form submission
     setSubmitted(true);
     setFormData({ name: '', email: '', feedback: '' });
   };
 
   return (
-    <section className="mt-[20%] py-16 px-4 bg-white">
-      <h2 className="text-5xl font-bold mb-12 text-center text-indigo-900">We Value Your Feedback</h2>
+    <section className="m-10 mt-60 py-16 px-4 bg-white">
+      <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center text-indigo-900">We Value Your Feedback</h2>
       <div className="max-w-lg mx-auto">
         {submitted ? (
           <p className="text-center text-green-500">Thank you for your feedback! We appreciate your input.</p>
         ) : (
           <form onSubmit={onSubmit} className="space-y-6">
             <div>
-              <label htmlFor="name" className="block text-gray-700 text-sm font-semibold mb-2">Name</label>
+              <label htmlFor="name" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">Name</label>
               <input
                 type="text"
                 name="name"
@@ -35,7 +35,7 @@ const FeedbackForm = () => {
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-gray-700 text-sm font-semibold mb-2">Email</label>
+              <label htmlFor="email" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">Email</label>
               <input
                 type="email"
                 name="email"
@@ -47,7 +47,7 @@ const FeedbackForm = () => {
               />
             </div>
             <div>
-              <label htmlFor="feedback" className="block text-gray-700 text-sm font-semibold mb-2">Feedback</label>
+              <label htmlFor="feedback" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">Feedback</label>
               <textarea
                 name="feedback"
                 value={feedback}

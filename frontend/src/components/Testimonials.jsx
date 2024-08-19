@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const testimonials = [
@@ -41,7 +41,7 @@ const Testimonials = () => {
 
   return (
     <section className="m-10 py-16 px-4">
-      <h2 className="text-5xl font-bold mb-10 text-center text-indigo-900">What Our Users Say</h2>
+      <h2 className="text-4xl md:text-5xl font-bold mb-10 text-center text-indigo-900">What Our Users Say</h2>
       <div className="relative w-full max-w-2xl mx-auto">
         <AnimatePresence initial={false}>
           {testimonials.map((testimonial, index) => (
@@ -59,9 +59,9 @@ const Testimonials = () => {
                   alt={testimonial.name}
                   className="w-20 h-20 rounded-full mx-auto mb-4"
                 />
-                <h3 className="text-xl font-semibold mb-2">{testimonial.name}</h3>
-                <p className="text-gray-600 mb-2">{testimonial.role}</p>
-                <p className="text-gray-700 italic">"{testimonial.message}"</p>
+                <h3 className="text-lg md:text-xl font-semibold mb-2">{testimonial.name}</h3>
+                <p className="text-sm md:text-base text-gray-600 mb-2">{testimonial.role}</p>
+                <p className="text-sm md:text-base text-gray-700 italic">"{testimonial.message}"</p>
               </motion.div>
             )
           ))}

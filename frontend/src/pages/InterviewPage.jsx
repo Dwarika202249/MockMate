@@ -105,7 +105,7 @@ const InterviewPage = () => {
         }
       );
       // Redirect or show a message after cancellation
-      window.location.href = "/"; // Redirect to home or another page
+      window.location.href = "/";
     } catch (error) {
       console.error("Error canceling interview:", error);
     }
