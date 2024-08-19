@@ -16,8 +16,10 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use('/api/interview', interviewRoutes);
 
+//mongodb connection
+const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/";
 mongoose
-  .connect("mongodb://localhost:27017/" || process.env.MONGO_URI)
+  .connect(mongoURI)
   .then(() => console.log("MongoDB Connected."))
   .catch((error) => console.log(error));
 
