@@ -17,7 +17,7 @@ const StartInterview = ({ onClose }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/interview/start', {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/interview/start`, {
         type,
         details,
         numQuestions,

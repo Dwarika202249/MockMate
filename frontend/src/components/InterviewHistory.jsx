@@ -15,7 +15,7 @@ const InterviewHistory = () => {
     const fetchHistory = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/interview/history",
+          `${import.meta.env.VITE_BASE_URL}/api/interview/history`,
           {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           }
@@ -39,7 +39,7 @@ const InterviewHistory = () => {
   const deleteInterview = async () => {
     try {
       await axios.delete(
-        `http://localhost:5000/api/interview/${selectedInterview}/delete`,
+        `${import.meta.env.VITE_BASE_URL}/api/interview/${selectedInterview}/delete`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }

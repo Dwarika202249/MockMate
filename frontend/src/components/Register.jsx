@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import GoogleAuth from './GoogleAuth'; 
-import { motion } from 'framer-motion'; // Import framer-motion for animations
+import { motion } from 'framer-motion';
 
 const Register = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -18,7 +18,8 @@ const Register = () => {
     setLoading(true);
     setError(''); // Clear previous errors
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', formData);
+      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/auth/register`, formData);
+
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
     } catch (error) {
@@ -32,7 +33,7 @@ const Register = () => {
   const handleGoogleLogin = async (token) => {
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/google', { id_token: token });
+      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/auth/google`, { id_token: token });
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
     } catch (error) {

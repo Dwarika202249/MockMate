@@ -20,7 +20,7 @@ const Dashboard = () => {
     // Fetch user data from the backend
     const fetchUserData = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/auth/user', {
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/auth/user`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         setUserData(response.data);

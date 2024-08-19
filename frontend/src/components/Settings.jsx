@@ -13,7 +13,7 @@ const Settings = () => {
     const fetchUserData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/auth/user",
+          `${import.meta.env.VITE_BASE_URL}/api/auth/user`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -34,7 +34,7 @@ const Settings = () => {
     e.preventDefault();
     try {
       const response = await axios.put(
-        "http://localhost:5000/api/auth/update-profile",
+        `${import.meta.env.VITE_BASE_URL}/api/auth/update-profile`,
         {
           name,
           email,

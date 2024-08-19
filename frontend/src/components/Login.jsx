@@ -20,7 +20,7 @@ const Login = () => {
     setError(""); // Clear previous errors
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        `${import.meta.env.VITE_BASE_URL}/api/auth/login`,
         formData
       );
       localStorage.setItem("token", res.data.token);
@@ -36,7 +36,11 @@ const Login = () => {
   const handleGoogleLogin = async (token) => {
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/google", {
+      const res = await axios.post(
+        
+        `${import.meta.env.VITE_BASE_URL}/api/auth/google`,
+        
+      {
         id_token: token,
       });
       localStorage.setItem("token", res.data.token);
@@ -114,9 +118,9 @@ const Login = () => {
           </button>
           <p className="mt-4 text-center text-gray-600">
             Don't have an account?{" "}
-            <a href="/register" className="text-indigo-500 hover:underline">
+            <Link to="/register" className="text-indigo-500 hover:underline">
               Register here
-            </a>
+            </Link>
           </p>
           <div className="w-full mt-5 flex justify-center items-center">
             <GoogleAuth onSuccess={handleGoogleLogin} />
