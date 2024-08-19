@@ -23,7 +23,7 @@ const FeedbackForm = () => {
         ) : (
           <form onSubmit={onSubmit} className="space-y-6">
             <div>
-              <label htmlFor="name" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">Name</label>
+              <label htmlFor="name" className="block text-indigo-800 text-sm md:text-base font-semibold mb-2">Name</label>
               <input
                 type="text"
                 name="name"
@@ -35,7 +35,7 @@ const FeedbackForm = () => {
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">Email</label>
+              <label htmlFor="email" className="block text-indigo-800 text-sm md:text-base font-semibold mb-2">Email</label>
               <input
                 type="email"
                 name="email"
@@ -47,7 +47,7 @@ const FeedbackForm = () => {
               />
             </div>
             <div>
-              <label htmlFor="feedback" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">Feedback</label>
+              <label htmlFor="feedback" className="block text-indigo-800 text-sm md:text-base font-semibold mb-2">Feedback</label>
               <textarea
                 name="feedback"
                 value={feedback}

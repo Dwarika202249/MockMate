@@ -3,6 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { isAuthenticated } from "../utils/auth";
 import { motion } from "framer-motion";
 import { HiMenu, HiX } from "react-icons/hi";
+import { RiDashboardFill } from "react-icons/ri";
+import { IoHome } from "react-icons/io5";
+import { FaCircleInfo } from "react-icons/fa6";
+import { RiLoginBoxFill } from "react-icons/ri";
 
 const Navbar = () => {
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
@@ -111,7 +115,7 @@ const Navbar = () => {
       <motion.div
         initial={{ x: "100%" }}
         animate={{ x: isOpen ? "0%" : "100%" }}
-        transition={{ type: "spring", stiffness: 100 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
         className={`fixed top-0 right-0 h-full bg-indigo-900 text-white w-64 z-50 transform transition-transform duration-300 ease-in-out sidebar`}
       >
         <div className="flex flex-col p-4">
@@ -121,15 +125,17 @@ const Navbar = () => {
           <Link
             to="/"
             onClick={() => setIsOpen(false)}
-            className="mb-4 text-2xl font-bold"
+            className="flex items-center mb-4 text-2xl font-bold"
           >
+            <IoHome className='mr-2' />
             Home
           </Link>
           <Link
             to="/about"
             onClick={() => setIsOpen(false)}
-            className="mb-4 text-2xl font-bold"
+            className="flex items-center mb-4 text-2xl font-bold"
           >
+            <FaCircleInfo className='mr-2'/>
             About
           </Link>
           {loggedIn ? (
@@ -137,8 +143,9 @@ const Navbar = () => {
               <Link
                 to="/dashboard"
                 onClick={() => setIsOpen(false)}
-                className="mb-4 text-2xl font-bold"
+                className="flex items-center mb-4 text-2xl font-bold"
               >
+                <RiDashboardFill className='mr-2' />
                 Dashboard
               </Link>
               <button
@@ -152,8 +159,9 @@ const Navbar = () => {
             <Link
               to="/login"
               onClick={() => setIsOpen(false)}
-              className="mb-4 text-2xl font-bold"
+              className="flex items-center mb-4 text-2xl font-bold"
             >
+              <RiLoginBoxFill className='mr-2'/>
               Login
             </Link>
           )}

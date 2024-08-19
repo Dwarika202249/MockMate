@@ -69,7 +69,7 @@ const Features = () => {
             <div className="flex justify-center items-center text-4xl mb-4 text-blue-500">
               {feature.icon}
             </div>
-            <h3 className="text-xl font-semibold mb-2 text-center">{feature.title}</h3>
+            <h3 className="text-xl font-semibold mb-2 text-center text-indigo-800">{feature.title}</h3>
             <p className="text-gray-700 text-center">{feature.description}</p>
           </motion.div>
         ))}
