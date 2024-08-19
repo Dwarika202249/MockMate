@@ -52,7 +52,7 @@ const Dashboard = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4 capitalize">Welcome to your Dashboard, <span className='uppercase text-indigo-900'>{userData.name}</span></h2>
+      <h2 className="text-2xl text-indigo-700 font-bold mb-4 capitalize">Welcome to your Dashboard, <span className='uppercase text-indigo-900'>{userData.name}</span></h2>
       <p className="text-lg">Here is an overview of your account:</p>
       <motion.div
         className="bg-white p-4 rounded-lg shadow-md mt-4"
@@ -60,8 +60,8 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h3 className="text-xl font-semibold mb-2 text-indigo-900">User Details:</h3>
-        <p><strong>Email:</strong> {userData.email}</p>
+        <h3 className="text-xl font-bold mb-2 text-indigo-500">User Details:</h3>
+        <p><strong className='text-indigo-500'>Email:</strong> {userData.email}</p>
         {/* Add more user details or statistics here */}
       </motion.div>
       {/* Create Interview Button */}
@@ -73,7 +73,7 @@ const Dashboard = () => {
       >
         <button
           onClick={handleOpenModal}
-          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 text-3xl flex justify-center items-center"
+          className="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600 text-3xl flex justify-center items-center"
         >
           Create Interview <span className='ml-3 font-bold text-5xl'>+</span>
         </button>

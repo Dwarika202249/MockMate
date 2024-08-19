@@ -10,18 +10,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@babel/plugin-transform-runtime": "^7.24.7",
     "@react-oauth/google": "^0.12.1",
     "axios": "^1.7.3",
     "framer-motion": "^11.3.24",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.3.0",
-    "react-router-dom": "^6.26.0"
+    "react-router-dom": "^6.26.0",
+    "react-speech-recognition": "^3.10.0",
+    "regenerator-runtime": "^0.14.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/regenerator-runtime": "^0.13.6",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.8.0",
@@ -32,5 +36,8 @@
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.9",
     "vite": "^5.4.0"
-  }
+  },
+  "browserslist": [
+    "last 2 Chrome versions"
+  ]
 }

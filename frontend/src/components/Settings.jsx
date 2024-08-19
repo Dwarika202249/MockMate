@@ -56,12 +56,12 @@ const Settings = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token"); // Remove token from localStorage
-    navigate("/login"); // Redirect to login page
+    navigate("/");
   };
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Settings</h2>
+      <h2 className="text-2xl text-indigo-700 font-bold mb-4">Settings</h2>
       {message && (
         <div
           className={`mb-4 p-2 ${
@@ -78,7 +78,7 @@ const Settings = () => {
         className="bg-white p-6 rounded-lg shadow-md"
       >
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">Name</label>
+          <label className="block text-indigo-500 font-bold mb-2">Name</label>
           <input
             type="text"
             value={name}
@@ -87,7 +87,7 @@ const Settings = () => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">Email</label>
+          <label className="block text-indigo-500 font-bold mb-2">Email</label>
           <input
             type="email"
             value={email}
@@ -96,7 +96,7 @@ const Settings = () => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">Password</label>
+          <label className="block text-indigo-500 font-bold mb-2">Password</label>
           <input
             type="password"
             value={password}
@@ -107,7 +107,7 @@ const Settings = () => {
         </div>
         <button
           type="submit"
-          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+          className="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600"
         >
           Save Changes
         </button>

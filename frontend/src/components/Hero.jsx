@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import heroImage from '../assets/hero.jpg';
+import { Link } from 'react-router-dom';
 
 const Hero = () => {
   return (
@@ -17,12 +18,12 @@ const Hero = () => {
         <p className="text-lg text-gray-700 mb-8">
           Enhance your interview skills with personalized mock interviews, experts like AI feedback, and detailed progress tracking. Start your journey towards acing your next interview today!
         </p>
-        <a
-          href="/register"
-          className="inline-block bg-indigo-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200"
+        <Link
+          to="/register"
+          className="inline-block bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600 transition duration-200"
         >
           Get Started
-        </a>
+        </Link>
       </motion.div>
       
       <motion.div

@@ -58,12 +58,12 @@ const InterviewHistory = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Interview History</h2>
+      <h2 className="text-2xl font-bold mb-4 text-indigo-700">Interview History</h2>
       <div className="space-y-4">
         {interviews.length ? (
           interviews.map((interview) => (
             <div key={interview._id} className="bg-white p-6 rounded-lg shadow-md relative">
-              <h3 className="text-xl font-semibold mb-2">{interview.type}</h3>
+              <h3 className="text-xl text-indigo-500 font-semibold mb-2">{interview.type}</h3>
               <p className="capitalize">{interview.details}</p>
               <p className="text-sm text-gray-600">
                 Date: {new Date(interview.createdAt).toLocaleDateString()}

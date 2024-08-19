@@ -49,7 +49,7 @@ const StartInterview = ({ onClose }) => {
       )}
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-gray-700">Interview Type:</label>
+          <label className="block font-semibold text-indigo-700">Interview Type:</label>
           <input
             type="text"
             value={type}
@@ -60,18 +60,18 @@ const StartInterview = ({ onClose }) => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700">Details:</label>
+          <label className="block font-semibold text-indigo-700">Details:</label>
           <textarea
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
             rows="4"
-            placeholder='Provide specific details to topicwise interviewed'
+            placeholder='Provide specific details like job role is Frontend engineer, and so on..'
             required
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700">Number of Questions:</label>
+          <label className="block font-semibold text-indigo-700">Number of Questions:</label>
           <input
             type="number"
             value={numQuestions}
@@ -81,7 +81,7 @@ const StartInterview = ({ onClose }) => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700">Difficulty Level:</label>
+          <label className="block font-semibold text-indigo-700">Difficulty Level:</label>
           <select
             value={difficulty}
             onChange={(e) => setDifficulty(e.target.value)}
@@ -94,18 +94,12 @@ const StartInterview = ({ onClose }) => {
         </div>
         <button
           type="submit"
-          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-          disabled={loading} // Disable button while loading
+          className="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600"
+          disabled={loading}
         >
           {loading ? 'Starting...' : 'Start Interview'}
         </button>
       </form>
-      {/* <button
-        onClick={onClose}
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
-      >
-        &times;
-      </button> */}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
           <Loader /> 

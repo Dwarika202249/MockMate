@@ -1,30 +1,99 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { isAuthenticated } from '../utils/auth';
-
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { isAuthenticated } from "../utils/auth";
+import { motion } from "framer-motion";
 
 const Navbar = () => {
-  const loggedIn = isAuthenticated();
+  const [loggedIn, setLoggedIn] = useState(isAuthenticated());
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      setLoggedIn(isAuthenticated());
+    };
+
+    window.addEventListener("storage", checkAuthStatus);
+
+    return () => {
+      window.removeEventListener("storage", checkAuthStatus);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setLoggedIn(false);
+    navigate("/");
+  };
 
   return (
-    <nav className="bg-indigo-900 text-white p-4">
+    <motion.nav
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="bg-indigo-900 text-white p-4"
+    >
       <div className="max-w-6xl mx-auto flex justify-between items-center">
-        <div>
-          <Link to="/" className="text-3xl font-bold">MockMate</Link>
-        </div>
+        <motion.div
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Link to="/" className="text-3xl font-bold">
+            MockMate
+          </Link>
+        </motion.div>
         <div>
           <ul className="flex space-x-4">
-            <li><Link to="/" className="hover:underline">Home</Link></li>
-            <li><Link to="/about" className="hover:underline">About</Link></li>
+            <motion.li
+              whileHover={{ scale: 1.1 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Link to="/" className="hover:underline">
+                Home
+              </Link>
+            </motion.li>
+            <motion.li
+              whileHover={{ scale: 1.1 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Link to="/about" className="hover:underline">
+                About
+              </Link>
+            </motion.li>
             {loggedIn ? (
-              <li><Link to="/dashboard" className="hover:underline">Dashboard</Link></li>
+              <>
+                <motion.li
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Link to="/dashboard" className="hover:underline">
+                    Dashboard
+                  </Link>
+                </motion.li>
+                <motion.li
+                >
+                  <Link
+                    onClick={handleLogout}
+                    className="bg-red-500 text-white py-1 px-2 mt-4 ml-5 rounded hover:bg-red-600"
+                  >
+                    Logout
+                  </Link>
+                </motion.li>
+              </>
             ) : (
-              <li><Link to="/login" className="hover:underline">Login</Link></li>
+              <motion.li
+                whileHover={{ scale: 1.1 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Link to="/login" className="hover:underline">
+                  Login
+                </Link>
+              </motion.li>
             )}
           </ul>
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 };
 

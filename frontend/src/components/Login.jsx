@@ -106,7 +106,7 @@ const Login = () => {
             disabled={loading}
             className={`w-full py-2 rounded-md transition duration-200 ${
               loading
-                ? "bg-gray-400 cursor-not-allowed"
+                ? "bg-indigo-900 cursor-not-allowed text-white"
                 : "bg-indigo-500 text-white hover:bg-indigo-600"
             }`}
           >

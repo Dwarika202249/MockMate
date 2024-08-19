@@ -244,7 +244,7 @@ const InterviewDetails = () => {
             animate={{ opacity: 1 }}  // Ending state of the animation
             transition={{ duration: 0.5 }}  // Duration of the animation
           >
-            <h2 className="text-3xl font-bold mb-4 text-indigo-700">
+            <h2 className="text-3xl font-bold mb-4 text-indigo-900">
               {interview.type} Interview
             </h2>
             <p className="text-gray-700 mb-2 capitalize">{interview.details}</p>
@@ -255,7 +255,7 @@ const InterviewDetails = () => {
             {feedback ? (
               <>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800">
+                  <h3 className="text-xl font-semibold text-indigo-800">
                     Questions & Answers
                   </h3>
                   <ul className="mt-4 space-y-4">
@@ -264,7 +264,7 @@ const InterviewDetails = () => {
                         key={index}
                         className="bg-gray-50 p-4 rounded-lg shadow-sm"
                       >
-                        <p className="text-gray-900 font-medium">
+                        <p className="text-indigo-900 font-medium">
                           Q{index + 1}: {question}
                         </p>
                         <p className="text-gray-600 mt-2">
@@ -276,7 +276,7 @@ const InterviewDetails = () => {
                 </div>
 
                 <div className="mt-8">
-                  <h3 className="text-xl font-semibold text-gray-800">
+                  <h3 className="text-xl font-semibold text-indigo-800">
                     Feedback
                   </h3>
                   <p className="mt-4 text-gray-600 whitespace-pre-line">
