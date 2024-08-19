@@ -116,7 +116,7 @@ const Register = () => {
             {loading ? "Registering..." : "Register"}
           </button>
           <p className="mt-4 text-center text-gray-600">
-            Already have an account? <a href="/login" className="text-indigo-500 hover:underline">Login here</a>
+            Already have an account? <Link to="/login" className="text-indigo-500 hover:underline">Login here</Link>
           </p>
           <div className='w-full mt-5 flex justify-center items-center'>
             <GoogleAuth onSuccess={handleGoogleLogin} />
