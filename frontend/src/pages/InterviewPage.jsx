@@ -6,7 +6,10 @@ import Navbar from "../components/Navbar";
 import Loader from "../components/Loader";
 import Feedback from "../components/Feedback";
 import CancelModal from "../components/CancelModal";
-
+import QuestionDisplay from "../components/QuestionDisplay";
+import RecordingControls from "../components/RecordingControls";
+import NavigationButtons from "../components/NavigationButtons";
+import VideoRecorder from "../components/VideoRecorder";
 
 const InterviewPage = () => {
   const { interviewId } = useParams();
@@ -16,7 +19,7 @@ const InterviewPage = () => {
   const [feedback, setFeedback] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  
+
   const {
     transcript,
     listening,
@@ -111,6 +114,11 @@ const InterviewPage = () => {
     }
   };
 
+  const handleVideoSave = (videoBlob) => {
+    // Handle saving the videoBlob (e.g., upload to server or save locally)
+    console.log("Video saved:", videoBlob);
+  };
+
   if (!browserSupportsSpeechRecognition) {
     return <span>Browser doesn't support speech recognition.</span>;
   }
@@ -138,62 +146,42 @@ const InterviewPage = () => {
   return (
     <div>
       <Navbar />
-      <h2 className="m-6 text-4xl text-indigo-900 font-bold mb-4">Interview</h2>
-      <div className="relative">
+      <h2 className="m-6 mt-28 text-4xl text-indigo-900 font-bold mb-4">Interview</h2>
+      <div className="relative flex flex-col md:flex-row">
         {/* Fixed cancel button */}
         <button
           onClick={() => setShowCancelModal(true)}
-          className="absolute top-4 right-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+          className="absolute top-4 md:-top-4 right-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
         >
           Cancel Interview
         </button>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl text-indigo-800 font-semibold mb-2">
-            Question {currentQuestionIndex + 1} of {questions.length}
-          </h3>
-          <p className="mb-4">{questions[currentQuestionIndex]}</p>
-          <textarea
-            value={answers[currentQuestionIndex] || ""}
-            onChange={handleAnswerChange}
-            rows="4"
-            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Type your answer here..."
-          />
-          <div className="mt-4 flex justify-between">
-            <button
-              onClick={listening ? handleStopRecording : handleStartRecording}
-              className={`py-2 px-4 rounded ${
-                listening
-                  ? "bg-red-500 hover:bg-red-600"
-                  : "bg-indigo-500 hover:bg-indigo-600"
-              } text-white`}
-            >
-              {listening ? "Stop Recording" : "Start Recording"}
-            </button>
-            {currentQuestionIndex < questions.length - 1 ? (
-              <button
-                onClick={handleNextQuestion}
-                className="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600"
-                disabled={
-                  !answers[currentQuestionIndex] ||
-                  answers[currentQuestionIndex].trim() === ""
-                }
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmitAnswers}
-                className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
-                disabled={
-                  isSubmitting ||
-                  !answers[currentQuestionIndex] ||
-                  answers[currentQuestionIndex].trim() === ""
-                }
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </button>
-            )}
+        <div className="bg-white p-6 rounded-lg shadow-md flex flex-col md:flex-row flex-grow">
+          <div className="flex-1 md:w-2/3">
+            <QuestionDisplay
+              currentQuestion={questions[currentQuestionIndex]}
+              currentQuestionIndex={currentQuestionIndex}
+              totalQuestions={questions.length}
+              answer={answers[currentQuestionIndex] || ""}
+              onAnswerChange={handleAnswerChange}
+            />
+            <div className="mt-4 flex flex-row md:flex-row justify-between">
+              <RecordingControls
+                listening={listening}
+                onStart={handleStartRecording}
+                onStop={handleStopRecording}
+              />
+              <NavigationButtons
+                currentQuestionIndex={currentQuestionIndex}
+                totalQuestions={questions.length}
+                onNext={handleNextQuestion}
+                onSubmit={handleSubmitAnswers}
+                isSubmitting={isSubmitting}
+                currentAnswer={answers[currentQuestionIndex]}
+              />
+            </div>
+          </div>
+          <div className="md:w-1/3 md:pl-4 mt-4 md:mt-0">
+            <VideoRecorder onSave={handleVideoSave} />
           </div>
         </div>
       </div>
