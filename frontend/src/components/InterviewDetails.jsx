@@ -43,7 +43,7 @@ const InterviewDetails = () => {
   return (
     <>
       <Navbar />
-      <div className="m-10">
+      <div className="m-10 mt-20">
         <button
           onClick={() => navigate(-1)}
           className="text-indigo-700 flex items-center mb-4"

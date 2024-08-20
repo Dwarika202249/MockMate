@@ -61,7 +61,7 @@ const Settings = () => {
 
   return (
     <div>
-      <h2 className="text-2xl text-indigo-700 font-bold mb-4">Settings</h2>
+      <h2 className="text-2xl text-indigo-700 font-bold mb-10">Settings</h2>
       {message && (
         <div
           className={`mb-4 p-2 ${

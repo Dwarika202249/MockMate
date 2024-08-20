@@ -52,7 +52,8 @@ const Dashboard = () => {
 
   return (
     <div>
-      <h2 className="text-2xl text-indigo-700 font-bold mb-4 capitalize">Welcome to your Dashboard, <span className='uppercase text-indigo-900'>{userData.name}</span></h2>
+      <h2 className="text-3xl text-indigo-700 font-bold mb-10">Dashboard</h2>
+      <h3 className="text-xl text-indigo-600 font-bold mb-4 capitalize">Welcome to your Dashboard, <span className='uppercase text-indigo-900'>{userData.name}</span></h3>
       <p className="text-lg">Here is an overview of your account:</p>
       <motion.div
         className="bg-white p-4 rounded-lg shadow-md mt-4"
@@ -77,6 +78,7 @@ const Dashboard = () => {
         >
           Create Interview <span className='ml-3 font-bold text-5xl'>+</span>
         </button>
+        
       </motion.div>
       {/* Modal for StartInterview */}
       <AnimatePresence>

@@ -3,7 +3,7 @@ import Navbar from './Navbar';
 
 const Feedback = ({ feedback }) => {
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="mt-16 min-h-screen bg-gray-100">
       <Navbar />
       <div className="max-w-4xl mx-auto p-8 mt-6">
         <h2 className="text-3xl font-extrabold text-indigo-900 mb-6">Feedback</h2>
