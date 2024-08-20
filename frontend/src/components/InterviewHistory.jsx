@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import { AiFillDelete } from "react-icons/ai";
 import DeleteModal from "./DeleteModal"; // Import the Modal component
+import Loader from "./Loader"
 
 const InterviewHistory = () => {
   const [interviews, setInterviews] = useState([]);
@@ -53,7 +54,7 @@ const InterviewHistory = () => {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <Loader />;
   if (error) return <p>{error}</p>;
 
   return (

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import StartInterview from './StartInterview';
+import Loader from './Loader';
 
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -47,7 +48,7 @@ const Dashboard = () => {
   }, []);
 
   if (!userData) {
-    return <div>Loading...</div>;
+    return <Loader />;
   }
 
   return (
