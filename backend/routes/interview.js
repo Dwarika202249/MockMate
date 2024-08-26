@@ -149,11 +149,41 @@ router.post("/submit", userAuth, async (req, res) => {
 });
 
 // Route to fetch interview history for a user
+// router.get('/history', userAuth, async (req, res) => {
+//   try {
+//     const interviews = await Interview.find({ user: req.user.id });
+    
+//     res.json(interviews);
+//   } catch (error) {
+//     console.error('Error fetching interview history:', error);
+//     res.status(500).send('Internal Server Error');
+//   }
+// });
+
+// Route to fetch interview history for a user with pagination
 router.get('/history', userAuth, async (req, res) => {
   try {
-    const interviews = await Interview.find({ user: req.user.id });
-    
-    res.json(interviews);
+    const { page = 1, limit = 4 } = req.query;
+
+    // Parse page and limit to integers
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+
+    // Calculate total interviews count
+    const totalCount = await Interview.countDocuments({ user: req.user.id });
+
+    // Fetch interviews with pagination
+    const interviews = await Interview.find({ user: req.user.id })
+      .sort({ createdAt: -1 }) // Sort by date (latest first)
+      .skip((pageNumber - 1) * limitNumber) // Skip previous pages
+      .limit(limitNumber); // Limit the results to the specified number
+
+    res.json({
+      interviews,
+      totalCount,
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalCount / limitNumber),
+    });
   } catch (error) {
     console.error('Error fetching interview history:', error);
     res.status(500).send('Internal Server Error');
