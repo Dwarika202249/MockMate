@@ -11,11 +11,43 @@ const Interview = require("../models/InterviewSchema");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// Route to generate interview questions
 router.post("/start", userAuth, async (req, res) => {
-  const { type, details, numQuestions, difficulty } = req.body;
+  const {
+    type,
+    details,
+    resume,
+    prompt,
+    numQuestions=5,
+    difficulty="medium",
+  } = req.body;
+
+  
 
   try {
+    let basePrompt = "";
+    if (resume) {
+      // Resume-based mode
+      const { name, email, phone, summary, skills, experience, education } = resume;
+
+      basePrompt = `You are an AI interviewer. Based on the following candidate resume details, generate ${numQuestions} personalized ${difficulty} interview questions that end with a "?".
+      
+      Name: ${name}
+      Email: ${email}
+      Phone: ${phone}
+      Summary: ${summary}
+      Skills: ${skills}
+      Experience: ${experience}
+      Education: ${education}
+      Extra context from candidate: ${prompt || "None"}
+      `;
+    } else if (type && details) {
+      // Classic mode
+      
+      basePrompt = `Generate ${numQuestions} ${difficulty} interview questions for a ${type} interview. The context is: ${details}`;
+    } else {
+      return res.status(400).json({ msg: "Invalid input: Provide either (type & details) or (resume & prompt)." });
+    }
+
     let questionsArray = [];
     let attempts = 0;
     const maxAttempts = 3;
@@ -23,57 +55,57 @@ router.post("/start", userAuth, async (req, res) => {
     while (questionsArray.length < numQuestions && attempts < maxAttempts) {
       attempts++;
 
-      const prompt = `Generate ${numQuestions - questionsArray.length} additional ${difficulty} interview questions for a ${type} interview that end with a question mark. Ensure each question is concise and ends with a "?" symbol, which is based on: ${details}. Here are some existing questions: ${questionsArray.join(', ')}`;
+      const dynamicPrompt = `${basePrompt}
+      Here are some existing questions: ${questionsArray.join(", ")}
+      Generate more.`;
+      
 
-      // Generate content using Gemini API
-      const result = await model.generateContent(prompt);
+      const result = await model.generateContent(dynamicPrompt);
+      
       const response = await result.response;
+      
       const questionsString = response.text().trim();
 
-      // Clean and format the questions
-      let newQuestionsArray = questionsString.split(/(?=\d+\.\s)/g); // Splitting by numbered question format
-
-      // Remove unnecessary details, asterisks, and extra formatting
-      newQuestionsArray = newQuestionsArray.map((question) => {
-        return question
-          .replace(/^\d+\.\s/, "") // Remove the leading question number (e.g., "1. ")
-          .replace(/\*\s*/g, "") // Remove asterisks
-          .trim(); // Trim leading/trailing spaces
-      });
-
-      // Filter out any non-question content and avoid duplicates
-      newQuestionsArray = newQuestionsArray.filter(
-        (question) => question.length > 0 && question.includes("?") && !questionsArray.includes(question)
+      let newQuestionsArray = questionsString.split(/(?=\d+\.\s)/g).map((q) =>
+        q.replace(/^\d+\.\s/, "").replace(/\*\s*/g, "").trim()
       );
 
-      // Add new questions to the existing array
+      newQuestionsArray = newQuestionsArray.filter(
+        (q) => q.includes("?") && !questionsArray.includes(q)
+      );
+
       questionsArray = [...questionsArray, ...newQuestionsArray];
     }
 
-    // Check if we have the correct number of questions
     if (questionsArray.length < numQuestions) {
-      return res.status(400).json({ msg: `Unable to generate the requested number of questions. Only ${questionsArray.length} questions could be generated.` });
+      return res.status(400).json({
+        msg: `Only ${questionsArray.length} questions generated.`,
+      });
     }
 
-    // Save the interview data to the database
     const newInterview = new Interview({
-      type,
-      details,
+      type: type || "resume_based",
+      details: details || prompt || "Generated from resume",
       numQuestions,
       difficulty,
-      questions: questionsArray,
-      user: req.user.id, // tracking which user created the interview
+      questions: questionsArray.slice(0, numQuestions),
+      user: req.user.id,
     });
+
+    
 
     await newInterview.save();
 
-    // Send the generated questions as response
-    res.json({ interviewId: newInterview._id, questions: questionsArray });
+    res.json({
+      interviewId: newInterview._id,
+      questions: questionsArray,
+    });
   } catch (error) {
-    console.error("Error generating interview questions:", error);
+    console.error("Interview generation error:", error);
     res.status(500).send("Internal Server Error");
   }
 });
+
 
 
 // Route to submit interview answers and get feedback
@@ -147,18 +179,6 @@ router.post("/submit", userAuth, async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-
-// Route to fetch interview history for a user
-// router.get('/history', userAuth, async (req, res) => {
-//   try {
-//     const interviews = await Interview.find({ user: req.user.id });
-    
-//     res.json(interviews);
-//   } catch (error) {
-//     console.error('Error fetching interview history:', error);
-//     res.status(500).send('Internal Server Error');
-//   }
-// });
 
 // Route to fetch interview history for a user with pagination
 router.get('/history', userAuth, async (req, res) => {

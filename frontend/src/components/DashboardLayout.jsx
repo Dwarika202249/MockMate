@@ -254,7 +254,7 @@ import { motion } from 'framer-motion';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { RiDashboardFill, RiProgress6Fill, RiHistoryFill } from "react-icons/ri";
 import { IoMdSettings } from "react-icons/io";
-import { FaArrowRight } from "react-icons/fa";
+import { FaArrowRight, FaFile } from "react-icons/fa";
 import { HiX } from "react-icons/hi";
 import Navbar from './Navbar';
 
@@ -330,6 +330,18 @@ const DashboardLayout = () => {
               >
                 <RiProgress6Fill className='mr-2'/>
                 Overview
+              </Link>
+            </li>
+            <li className="mb-4">
+              <Link
+                to="/dashboard/resume"
+                className={`p-2 flex rounded items-center ${
+                  isActive('/dashboard/resume') ? 'bg-indigo-700' : 'hover:bg-indigo-700'
+                }`}
+              >
+                {/* <RiProgress6Fill className='mr-2'/> */}
+                <FaFile className='mr-2'/>
+                Resume Interview
               </Link>
             </li>
             <li className="mb-4">

@@ -82,7 +82,7 @@ const InterviewHistory = () => {
               key={interview._id}
               className="bg-white p-6 rounded-lg shadow-md relative md:w-[45%] md:h-[200px] overflow-hidden"
             >
-              <h3 className="text-xl text-indigo-500 font-semibold mb-2">{interview.type}</h3>
+              <h3 className="text-xl capitalize text-indigo-500 font-semibold mb-2">{interview.type}</h3>
               <p className="capitalize text-sm md:text-base">
                 {truncateText(interview.details, 15)}
               </p>
