@@ -2,6 +2,10 @@
 
 **MockMate** is an AI-driven mock interview platform designed to help users prepare for interviews by providing real-time feedback, practice sessions, and more. The application uses advanced AI to simulate interview scenarios, allowing users to refine their skills and build confidence.
 
+## Guest Login Credential:
+**Email:** guest@mockmate.com
+**Password:** Guest@mockmate123
+
 ## Features
 
 - **AI-Driven Interviews**: Generate interview questions and receive AI-based feedback on your answers.
