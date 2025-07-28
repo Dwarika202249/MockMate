@@ -6,19 +6,31 @@
 
 @keyframes floatSlow {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(-1.5deg);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-12px) rotate(1.5deg);
+  }
+  75% {
+    transform: translateY(-8px) rotate(-1deg);
   }
 }
 
 @keyframes floatSlow2 {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(8px) rotate(1.5deg);
   }
   50% {
-    transform: translateY(12px);
+    transform: translateY(12px) rotate(-1.5deg);
+  }
+  75% {
+    transform: translateY(8px) rotate(1deg);
   }
 }
 
