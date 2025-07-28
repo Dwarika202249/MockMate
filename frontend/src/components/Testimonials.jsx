@@ -172,9 +172,9 @@ const Testimonials = () => {
   }, []);
 
   return (
-    <section className="m-10 py-16 px-4 bg-[#fefefe]">
+    <section className="m-10 py-24 px-4 bg-[#fefefe]">
       <div className="smoky-bg z-0"></div>
-      <h2 className="text-5xl font-bold mb-12 text-center text-[#0e031a] z-10 relative">
+      <h2 className="text-5xl -mt-8 font-bold mb-20 text-center text-[#0e031a] z-10 relative">
         What Our Users Say
       </h2>
 
@@ -204,7 +204,7 @@ const Testimonials = () => {
                   <p className="text-[#260c42] font-medium mb-1">
                     {testimonial.role} @ {testimonial.company}
                   </p>
-                  <p className="text-gray-700 italic text-base leading-relaxed">
+                  <p className="text-gray-500 italic text-base leading-relaxed">
                     "{testimonial.message}"
                   </p>
                 </motion.div>
