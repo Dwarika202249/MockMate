@@ -114,6 +114,51 @@ const testimonials = [
     avatar: "https://randomuser.me/api/portraits/women/65.jpg",
     bgColor: "#8DBCC7",
   },
+  {
+    name: "Aarav Mehta",
+    role: "Frontend Developer",
+    company: "Flipkart",
+    message:
+      "MockMate gave me the confidence to face even the toughest technical rounds. The mock sessions were super realistic!",
+    avatar: "https://randomuser.me/api/portraits/men/85.jpg",
+    bgColor: "#FFD580",
+  },
+  {
+    name: "Lina Alvarez",
+    role: "AI Researcher",
+    company: "OpenAI",
+    message:
+      "Loved how AI-driven the platform is. The feedback I received was just like a real hiring panel’s input.",
+    avatar: "https://randomuser.me/api/portraits/women/45.jpg",
+    bgColor: "#B8E2F2",
+  },
+  {
+    name: "Haruto Tanaka",
+    role: "DevOps Engineer",
+    company: "Amazon",
+    message:
+      "MockMate was like a virtual coach. The continuous improvement suggestions were gold!",
+    avatar: "https://randomuser.me/api/portraits/men/60.jpg",
+    bgColor: "#E0B0FF",
+  },
+  {
+    name: "Chloe Dubois",
+    role: "Marketing Analyst",
+    company: "Netflix",
+    message:
+      "The structured interview simulations helped me frame better responses and manage time under pressure.",
+    avatar: "https://randomuser.me/api/portraits/women/25.jpg",
+    bgColor: "#FFA3B1",
+  },
+  {
+    name: "Kiran Patel",
+    role: "Full Stack Engineer",
+    company: "Zomato",
+    message:
+      "MockMate nailed the mock interview experience. It’s exactly what you need before stepping into the real deal.",
+    avatar: "https://randomuser.me/api/portraits/men/38.jpg",
+    bgColor: "#A7E9AF",
+  },
 ];
 
 const Testimonials = () => {
@@ -151,12 +196,12 @@ const Testimonials = () => {
                   <img
                     src={testimonial.avatar}
                     alt={testimonial.name}
-                    className="w-20 h-20 rounded-full mx-auto mb-4 border-4 border-indigo-200"
+                    className="w-32 h-w-32 rounded-full mx-auto mb-4 border-4 border-indigo-200"
                   />
-                  <h3 className="text-xl font-semibold text-indigo-800 mb-1">
+                  <h3 className="text-xl font-semibold text-[#21093b] mb-1">
                     {testimonial.name}
                   </h3>
-                  <p className="text-indigo-600 font-medium mb-1">
+                  <p className="text-[#260c42] font-medium mb-1">
                     {testimonial.role} @ {testimonial.company}
                   </p>
                   <p className="text-gray-700 italic text-base leading-relaxed">

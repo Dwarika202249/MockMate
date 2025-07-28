@@ -44,8 +44,9 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] md:w-[80%] bg-white rounded-full shadow-lg px-6 py-3 z-50 flex justify-between items-center">
-
+      <nav
+        className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] md:w-[80%] bg-white rounded-full shadow-lg px-6 py-3 z-50 flex justify-between items-center"
+      >
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <div className="bg-purple-700 rounded-xl p-2">
@@ -56,11 +57,35 @@ const Navbar = () => {
 
         {/* Center Navigation Links */}
         <div className="hidden md:flex gap-8 text-sm font-medium text-indigo-900">
-          <Link to="/" className="hover:text-purple-700">Home</Link>
-          <Link to="/" className="hover:text-purple-700">Pricing</Link>
-          <Link to="/about" className="hover:text-purple-700">About</Link>
+          <Link to="/" className="hover:text-purple-700">
+            Home
+          </Link>
+          <Link
+            to="/"
+            onClick={(e) => {
+              e.preventDefault();
+              const pricingSection = document.getElementById("pricing");
+              
+              if (pricingSection) {
+                pricingSection.scrollIntoView({ behavior: "smooth" });
+              } else {
+                // Navigate to home first, then scroll (if coming from another route)
+                navigate("/", {
+                  state: { scrollTo: "pricing" },
+                });
+              }
+            }}
+            className="hover:text-purple-700"
+          >
+            Pricing
+          </Link>
+          <Link to="/about" className="hover:text-purple-700">
+            About
+          </Link>
           {loggedIn && (
-            <Link to="/dashboard" className="hover:text-purple-700">Dashboard</Link>
+            <Link to="/dashboard" className="hover:text-purple-700">
+              Dashboard
+            </Link>
           )}
         </div>
 
@@ -109,23 +134,42 @@ const Navbar = () => {
           <button onClick={toggleSidebar} className="self-end mb-8">
             <HiX size={30} />
           </button>
-          <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center mb-4 text-2xl font-bold">
+          <Link
+            to="/"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center mb-4 text-2xl font-bold"
+          >
             <IoHome className="mr-2" /> Home
           </Link>
-          <Link to="/about" onClick={() => setIsOpen(false)} className="flex items-center mb-4 text-2xl font-bold">
+          <Link
+            to="/about"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center mb-4 text-2xl font-bold"
+          >
             <FaCircleInfo className="mr-2" /> About
           </Link>
           {loggedIn ? (
             <>
-              <Link to="/dashboard" onClick={() => setIsOpen(false)} className="flex items-center mb-4 text-2xl font-bold">
+              <Link
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center mb-4 text-2xl font-bold"
+              >
                 <RiDashboardFill className="mr-2" /> Dashboard
               </Link>
-              <button onClick={handleLogout} className="bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600">
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600"
+              >
                 Logout
               </button>
             </>
           ) : (
-            <Link to="/login" onClick={() => setIsOpen(false)} className="flex items-center mb-4 text-2xl font-bold">
+            <Link
+              to="/login"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center mb-4 text-2xl font-bold"
+            >
               <RiLoginBoxFill className="mr-2" /> Login
             </Link>
           )}

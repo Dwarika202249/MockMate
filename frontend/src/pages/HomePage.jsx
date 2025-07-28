@@ -5,8 +5,24 @@ import Testimonials from "../components/Testimonials";
 import FeedbackForm from "../components/FeedbackForm";
 import Footer from "../components/Footer";
 import HowItWorks from "../components/HowItWorks";
+import Pricing from "../components/Pricing";
+import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
 
 const HomePage = () => {
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location?.state?.scrollTo === "pricing") {
+      const pricingSection = document.getElementById("pricing");
+      if (pricingSection) {
+        setTimeout(() => {
+          pricingSection.scrollIntoView({ behavior: "smooth" });
+        }, 100); // Wait for DOM to render
+      }
+    }
+  }, [location]);
 
   return (
     <div>
@@ -15,6 +31,7 @@ const HomePage = () => {
       <Features />
       <HowItWorks />
       <Testimonials />
+      <Pricing />
       <FeedbackForm />
       <Footer />
     </div>

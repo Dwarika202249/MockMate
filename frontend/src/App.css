@@ -114,3 +114,14 @@
   mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
 }
 
+@keyframes spin-slow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.spin-slow {
+  animation: spin-slow 6s ease-in-out infinite;
+}
