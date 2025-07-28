@@ -8,7 +8,9 @@ import {
 
 const Hero = () => {
   return (
-    <section className="relative bg-[#0e031a] text-center py-32 px-4 sm:px-8 lg:px-32 overflow-hidden">
+    <section className="relative bg-[#0e031a] text-center py-32 px-4 sm:px-8 lg:px-32 overflow-hidden z-10">
+      {/* Background Gradient Blur */}
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 opacity-20 blur-[120px] rounded-full pointer-events-none z-0" />
       {/* Desktop Floating Cards */}
       <>
         {/* Interview Passed */}
@@ -69,7 +71,7 @@ const Hero = () => {
         MockMate: Your interview mate
       </h5>
 
-      <h1 className="mt-6 text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
+      <h1 className="relative z-10 mt-6 text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
         Don’t Just Prepare, <br />
         <span className="text-white font-extrabold">
           Dominate Your Interviews
@@ -129,3 +131,5 @@ const Hero = () => {
 };
 
 export default Hero;
+
+
