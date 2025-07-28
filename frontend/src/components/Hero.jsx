@@ -67,8 +67,9 @@ const Hero = () => {
       </>
 
       {/* Hero Text */}
-      <h5 className="uppercase tracking-wide text-xs font-bold bg-indigo-900 text-white px-12 py-2 sm:mb-8 rounded-full inline-block">
-        MockMate: Your interview mate
+      <h5 className="relative uppercase tracking-wide text-xs font-bold bg-indigo-900 text-white px-12 py-2 sm:mb-8 rounded-full inline-block overflow-hidden z-10">
+        <span className="relative z-10">MockMate: Your interview mate</span>
+        <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent shine-glow" />
       </h5>
 
       <h1 className="relative z-10 mt-6 text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
@@ -131,5 +132,3 @@ const Hero = () => {
 };
 
 export default Hero;
-
-

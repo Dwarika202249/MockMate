@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { RiDashboardFill, RiProgress6Fill, RiHistoryFill } from "react-icons/ri";

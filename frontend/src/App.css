@@ -41,3 +41,21 @@
 .animate-floatSlow2 {
   animation: floatSlow2 5s ease-in-out infinite;
 }
+
+@keyframes shine {
+  0%, 100% {
+    background-position: -200% 0;
+  }
+  50% {
+    background-position: 200% 0;
+  }
+}
+
+.shine-glow {
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  background-size: 200% auto;
+  animation: shine 6s linear infinite;
+  mix-blend-mode: overlay;
+  z-index: 5;
+}
+
