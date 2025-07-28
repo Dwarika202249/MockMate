@@ -63,8 +63,8 @@ const Pricing = () => {
         <span className="relative z-10">Pricing</span>
         <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent shine-glow" />
       </h5>
-      <h2 className="text-4xl font-bold text-center m-4">
-        Flexible pricing for every type of jobseeker
+      <h2 className=" capitalize text-4xl font-bold text-center m-4">
+        Flexible pricing for <span className="text-purple-500">every type of</span> jobseeker
       </h2>
       <p className="text-center text-indigo-200 mb-12 max-w-2xl mx-auto">
         Whether you're just starting out or prepping for FAANG, we've got a plan to elevate your interview game.

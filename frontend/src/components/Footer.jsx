@@ -1,16 +1,15 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer className="bg-indigo-900 text-white py-8">
+    <footer className="bg-[#0e031a] text-white py-8">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex flex-col md:flex-row md:justify-between">
           <div className="mb-6 md:mb-0">
             <h3 className="text-lg font-bold mb-4">MockMate</h3>
-            <p className="text-sm">Your trusted partner for mock interviews and career growth.</p>
+            <p className="text-sm w-[70%]">Empower your preparation with MockMate’s AI-powered mock interviews tailored to your role, experience level, and goals. From real-time feedback to expert-crafted questions, we help you build confidence, sharpen your skills, and accelerate your journey to landing your dream job.</p>
           </div>
-          <div className="mb-6 md:mb-0">
+          <div className="mb-6 md:mb-0 w-[30%]">
             <h4 className="text-md font-semibold mb-2">Quick Links</h4>
             <ul>
               <li><Link to="/" className="hover:underline">Home</Link></li>

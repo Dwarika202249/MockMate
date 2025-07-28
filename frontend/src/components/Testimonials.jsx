@@ -175,7 +175,7 @@ const Testimonials = () => {
     <section className="m-10 py-24 px-4 bg-[#fefefe]">
       <div className="smoky-bg z-0"></div>
       <h2 className="text-5xl -mt-8 font-bold mb-20 text-center text-[#0e031a] z-10 relative">
-        What Our Users Say
+        What <span className="text-purple-500">Our Users</span> Say
       </h2>
 
       <div className="relative w-full max-w-2xl mx-auto z-10">

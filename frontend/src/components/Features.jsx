@@ -44,7 +44,7 @@ const Features = () => {
       <div className="smoky-bg"></div>
 
       <h2 className="text-5xl font-bold mb-10 text-center text-[#0e031a] z-10 relative">
-        Our Features
+        Our <span className="text-purple-500">Features</span>
       </h2>
 
       <div

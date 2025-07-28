@@ -8,6 +8,8 @@ import HowItWorks from "../components/HowItWorks";
 import Pricing from "../components/Pricing";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import FAQs from "../components/FAQs";
+import CallToAction from "../components/CallToAction";
 
 const HomePage = () => {
 
@@ -19,7 +21,7 @@ const HomePage = () => {
       if (pricingSection) {
         setTimeout(() => {
           pricingSection.scrollIntoView({ behavior: "smooth" });
-        }, 100); // Wait for DOM to render
+        }, 100);
       }
     }
   }, [location]);
@@ -32,6 +34,8 @@ const HomePage = () => {
       <HowItWorks />
       <Testimonials />
       <Pricing />
+      <FAQs />
+      <CallToAction />
       <FeedbackForm />
       <Footer />
     </div>
