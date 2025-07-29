@@ -47,7 +47,7 @@ const ProfileMenu = ({ onSignOut }) => {
     <div className="relative inline-block text-left" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-500 text-white font-bold uppercase focus:outline-none"
+        className="flex items-center justify-center w-10 h-10 rounded-full bg-[#501a89] text-white font-bold uppercase focus:outline-none"
       >
         {userData?.photoURL ? (
           <img
@@ -61,10 +61,10 @@ const ProfileMenu = ({ onSignOut }) => {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-60 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+        <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
           <div className="p-4 border-b">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-lg uppercase">
+              <div className="w-10 h-10 rounded-full bg-[#7e2ed4] text-white flex items-center justify-center font-bold text-lg uppercase">
                 {userData?.photoURL ? (
                   <img
                     src={userData.photoURL}
@@ -82,30 +82,31 @@ const ProfileMenu = ({ onSignOut }) => {
             </div>
           </div>
           <div className="py-2">
+            <Link
+              to="/dashboard"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <FaUser /> Profile
+            </Link>
             <button
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
               onClick={() => alert("Manage account clicked")}
             >
               <FaUserCog /> Manage Account
             </button>
-              <Link
-                to="/dashboard"
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-              >
-                <FaUser /> Profile
-              </Link>
-              <Link
-                to="/dashboard/settings"
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-              >
-                <IoSettingsOutline /> Settings
-              </Link>
+
+            <Link
+              to="/dashboard/settings"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+            >
+              <IoSettingsOutline /> Settings
+            </Link>
 
             <button
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 text-red-600"
               onClick={onSignOut}
             >
-              <FaSignOutAlt /> Sign Out
+              <FaSignOutAlt /> Log Out
             </button>
           </div>
         </div>

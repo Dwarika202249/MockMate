@@ -25,6 +25,7 @@ router.post('/google', async (req, res) => {
           name: payload.name,
           email: payload.email,
           googleId: payload.sub,
+          photoURL: payload.picture,
         });
         await user.save();
       }
@@ -71,6 +72,7 @@ router.post('/register', async (req, res) => {
         res.status(500).send('Internal server error');
     }
 });
+
 
 router.post('/login', async (req, res) => {
     const {email, password} = req.body;
