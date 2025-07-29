@@ -8,6 +8,7 @@ import { FaHistory } from "react-icons/fa";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FiHelpCircle } from "react-icons/fi";
 import { MdLogout } from "react-icons/md";
+import ProfileMenu from "./ProfileMenu";
 
 const menuItems = [
   { label: "Dashboard", icon: <RiDashboardFill />, route: "/dashboard" },
@@ -98,6 +99,7 @@ const DashboardLayout = () => {
         isOpen ? "ml-0 md:ml-64" : "ml-0"
       }`}>
         <div className="p-6">
+          <div className="flex justify-end"><ProfileMenu onSignOut={handleLogout} /></div>
           <Outlet />
         </div>
       </div>
