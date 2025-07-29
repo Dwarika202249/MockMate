@@ -6,6 +6,8 @@ import { RiDashboardFill } from "react-icons/ri";
 import { IoHome } from "react-icons/io5";
 import { FaCircleInfo } from "react-icons/fa6";
 import { RiLoginBoxFill } from "react-icons/ri";
+import { FaTags  } from "react-icons/fa";
+import ProfileMenu from "./ProfileMenu";
 
 const Navbar = () => {
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
@@ -33,6 +35,20 @@ const Navbar = () => {
     }
   };
 
+  const scrollToPricing = (e) => {
+    e.preventDefault();
+    const pricingSection = document.getElementById("pricing");
+
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: "smooth" });
+    } else {
+      // Navigate to home first, then scroll (if coming from another route)
+      navigate("/", {
+        state: { scrollTo: "pricing" },
+      });
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
@@ -44,9 +60,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav
-        className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] md:w-[80%] bg-white rounded-full shadow-lg px-6 py-3 z-50 flex justify-between items-center"
-      >
+      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] md:w-[80%] bg-white rounded-full shadow-lg px-6 py-3 z-50 flex justify-between items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <div className="bg-purple-700 rounded-xl p-2">
@@ -63,17 +77,7 @@ const Navbar = () => {
           <Link
             to="/"
             onClick={(e) => {
-              e.preventDefault();
-              const pricingSection = document.getElementById("pricing");
-              
-              if (pricingSection) {
-                pricingSection.scrollIntoView({ behavior: "smooth" });
-              } else {
-                // Navigate to home first, then scroll (if coming from another route)
-                navigate("/", {
-                  state: { scrollTo: "pricing" },
-                });
-              }
+              scrollToPricing(e);
             }}
             className="hover:text-purple-700"
           >
@@ -88,9 +92,15 @@ const Navbar = () => {
             </Link>
           )}
         </div>
+          
 
         {/* Auth Button */}
-        <div className="hidden md:flex">
+        <div className="hidden md:flex px-5">
+          {/* Profile Avatar */}
+
+          {loggedIn && (
+            <div className="mr-3"><ProfileMenu onSignOut={handleLogout} /></div>
+          )}
           {loggedIn ? (
             <button
               onClick={handleLogout}
@@ -126,7 +136,7 @@ const Navbar = () => {
 
       {/* Mobile Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full bg-indigo-900 text-white w-64 z-50 sidebar transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full bg-[#0e031a] text-white w-64 z-50 sidebar transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -148,6 +158,17 @@ const Navbar = () => {
           >
             <FaCircleInfo className="mr-2" /> About
           </Link>
+          <Link
+            to="/"
+            onClick={(e) => {
+              setIsOpen(false);
+              scrollToPricing(e);
+            }}
+            className="flex items-center mb-4 text-2xl font-bold"
+          >
+            <FaTags className="mr-2" /> Pricing
+          </Link>
+
           {loggedIn ? (
             <>
               <Link
@@ -157,6 +178,7 @@ const Navbar = () => {
               >
                 <RiDashboardFill className="mr-2" /> Dashboard
               </Link>
+
               <button
                 onClick={handleLogout}
                 className="bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600"
