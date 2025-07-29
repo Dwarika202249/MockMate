@@ -85,8 +85,8 @@ const DashboardLayout = () => {
 
       {/* Hamburger / Close Button */}
       <button
-        className={`md:hidden fixed ${isOpen ? "top-0" : "top-5"} z-50 p-2 rounded-md transition-all duration-300 ${
-          isOpen ? "left-64" : "left-4"
+        className={`md:hidden fixed top-8 z-50 p-2 rounded-md transition-all duration-300 ${
+          isOpen ? "left-[13.5rem]" : "left-4"
         } bg-purple-600 text-white`}
         onClick={toggleSidebar}
       >
