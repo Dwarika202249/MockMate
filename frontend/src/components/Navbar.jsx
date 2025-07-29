@@ -119,7 +119,12 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="md:hidden">
+        <div className="md:hidden flex px-5">
+          {/* Profile Avatar */}
+
+          {loggedIn && (
+            <div className="mr-3"><ProfileMenu onSignOut={handleLogout} /></div>
+          )}
           <button onClick={toggleSidebar} className="text-purple-800">
             {isOpen ? <HiX size={28} /> : <HiMenu size={28} />}
           </button>

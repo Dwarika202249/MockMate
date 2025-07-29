@@ -11,13 +11,10 @@ const CallToAction = () => {
         <p className="text-[#c0c8f8] text-lg mb-8">
           Join thousands of job seekers & techies who used MockMate’s AI mock interviews to land their dream roles.
         </p>
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-4">
-          {/* <button className="inline-flex items-center gap-2 px-6 py-3 text-white bg-[#5E3BEE] hover:bg-[#4526cb] font-semibold rounded-lg transition">
-            Start Free Trial <AiOutlineArrowRight size={18} />
-          </button> */}
+        <div className="flex justify-center items-center gap-4 mb-4">
           <Link
                   to="/dashboard"
-                  className="inline-flex items-center text-white bg-[#5E3BEE] hover:bg-[#4526cb] font-bold px-6 py-3 rounded-lg transition-all duration-200 shadow-[0_0_30px_rgba(255,255,255,0.3)] ring-1 ring-white/10 backdrop-blur-sm"
+                  className="inline-flex items-center text-white bg-[#5E3BEE] hover:bg-[#4526cb] font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-[0_0_30px_rgba(255,255,255,0.3)] ring-1 ring-white/10 backdrop-blur-sm"
                 >
                   Start Free Trial <AiOutlineArrowRight size={18} />
                 </Link>
