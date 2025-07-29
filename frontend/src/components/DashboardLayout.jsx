@@ -1,152 +1,107 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Link, useLocation, Outlet } from 'react-router-dom';
-import { RiDashboardFill, RiProgress6Fill, RiHistoryFill } from "react-icons/ri";
-import { IoMdSettings } from "react-icons/io";
-import { FaArrowRight, FaFile } from "react-icons/fa";
-import { HiX } from "react-icons/hi";
-import Navbar from './Navbar';
+import { useState, useEffect } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { FaBars, FaTimes } from "react-icons/fa";
+import { RiDashboardFill } from "react-icons/ri";
+import { FaVideo } from "react-icons/fa";
+import { MdTrendingUp } from "react-icons/md";
+import { FaHistory } from "react-icons/fa";
+import { IoSettingsOutline } from "react-icons/io5";
+import { FiHelpCircle } from "react-icons/fi";
+import { MdLogout } from "react-icons/md";
+
+const menuItems = [
+  { label: "Dashboard", icon: <RiDashboardFill />, route: "/dashboard" },
+  { label: "Take Interview", icon: <FaVideo />, route: "/dashboard/resume" },
+  { label: "Progress Tracking", icon: <MdTrendingUp />, route: "/dashboard/overview" },
+  { label: "Interview History", icon: <FaHistory />, route: "/dashboard/interview-history" },
+  { label: "FAQs", icon: <FiHelpCircle />, route: "/dashboard/faqs" },
+  { label: "Settings", icon: <IoSettingsOutline />, route: "/dashboard/settings" },
+];
 
 const DashboardLayout = () => {
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(true); // Sidebar toggle state
-
-  // Set initial state based on screen width
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsOpen(false); // Close sidebar on mobile view
-      } else {
-        setIsOpen(true); // Open sidebar on desktop view
-      }
-    };
-
-    handleResize(); // Set initial state on component mount
-    window.addEventListener('resize', handleResize); // Adjust state on window resize
-
-    return () => window.removeEventListener('resize', handleResize); // Cleanup
-  }, []);
-
-  // Handle sidebar close on outside click in mobile view only
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (window.innerWidth < 768 && isOpen && !event.target.closest('.sidebar') && !event.target.closest('.sidebar-toggle')) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+  const [isOpen, setIsOpen] = useState(true);
+  const navigate = useNavigate();
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) setIsOpen(false);
+      else setIsOpen(true);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const isActive = (route) => location.pathname === route;
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
+  };
+
   return (
-    <>
-      <Navbar />
-
-      <div className="flex min-h-screen relative">
-        {/* Sidebar */}
-        <motion.div
-          className={`fixed md:relative w-64 bg-indigo-900 text-white p-4 shadow-md z-40 transform transition-transform duration-300 ease-in-out sidebar ${
-            isOpen ? 'translate-x-0 md:h-auto min-h-screen' : '-translate-x-full md:translate-x-0 min-h-screen'
-          }`}
-          initial={{ x: '-100%' }}
-          animate={{ x: isOpen ? 0 : '-100%' }}
-          transition={{ duration: 0.3 }}
-          // style={{ height: '100vh' }}
-        >
-          <ul className={`${isOpen ? "md:fixed" : ""}`}>
-            <li className="mb-4 mt-20">
-              <Link
-                to="/dashboard"
-                className={`p-2 flex rounded items-center ${
-                  isActive('/dashboard') ? 'bg-indigo-700' : 'hover:bg-indigo-700'
-                }`}
-              >
-                <RiDashboardFill className='mr-2' />
-                Dashboard
-              </Link>
-            </li>
-            <li className="mb-4">
-              <Link
-                to="/dashboard/overview"
-                className={`p-2 flex rounded items-center ${
-                  isActive('/dashboard/overview') ? 'bg-indigo-700' : 'hover:bg-indigo-700'
-                }`}
-              >
-                <RiProgress6Fill className='mr-2'/>
-                Overview
-              </Link>
-            </li>
-            <li className="mb-4">
-              <Link
-                to="/dashboard/resume"
-                className={`p-2 flex rounded items-center ${
-                  isActive('/dashboard/resume') ? 'bg-indigo-700' : 'hover:bg-indigo-700'
-                }`}
-              >
-                {/* <RiProgress6Fill className='mr-2'/> */}
-                <FaFile className='mr-2'/>
-                Resume Interview
-              </Link>
-            </li>
-            <li className="mb-4">
-              <Link
-                to="/dashboard/interview-history"
-                className={`p-2 flex items-center rounded ${
-                  isActive('/dashboard/interview-history')
-                    ? 'bg-indigo-700'
-                    : 'hover:bg-indigo-700'
-                }`}
-              >
-                <RiHistoryFill className='mr-2' />
-                Interview History
-              </Link>
-            </li>
-            <li className="mb-4">
-              <Link
-                to="/dashboard/settings"
-                className={`p-2 flex items-center rounded ${
-                  isActive('/dashboard/settings') ? 'bg-indigo-700' : 'hover:bg-indigo-700'
-                }`}
-              >
-                <IoMdSettings className='mr-2' />
-                Settings
-              </Link>
-            </li>
-          </ul>
-        </motion.div>
-
-        {/* Sidebar Toggle Button */}
-        <motion.div
-          className={`fixed top-20 z-50 sidebar-toggle ${isOpen ? 'left-64' : 'left-4'} `}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <button onClick={toggleSidebar} className="text-white bg-indigo-800 rounded-md ml-4">
-            {isOpen ? <HiX size={30} /> : <FaArrowRight size={30}/>}
-          </button>
-        </motion.div>
-
-        {/* Content Area */}
-        <motion.div
-          className={`flex-1 bg-gray-100 p-8 transition-all duration-300 ease-in-out overflow-y-auto ${
-            isOpen ? 'block md:block' : 'block md:-ml-64'
-          }`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div className="mt-20 ml-16">
-            <Outlet />
+    <div className="flex min-h-screen relative">
+      {/* Sidebar */}
+      <div
+        className={`fixed top-0 left-0 z-40 h-full w-64 bg-[#0e031a] text-white p-6 transform transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0`}
+      >
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 mb-10">
+          <div className="bg-purple-700 rounded-xl p-2">
+            <span className="text-white font-bold text-lg">🦊</span>
           </div>
-        </motion.div>
+          <span className="text-2xl font-bold text-white ml-3">MockMate</span>
+        </Link>
+
+        {/* Menu */}
+        <nav className="space-y-4 mt-10">
+          {menuItems.map((item, idx) => (
+            <Link
+              key={idx}
+              to={item.route}
+              className={`flex items-center gap-3 text-sm px-4 py-2 rounded-md transition ${
+                isActive(item.route)
+                  ? "bg-purple-600"
+                  : "hover:bg-purple-600"
+              }`}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {/* Logout */}
+        <button onClick={handleLogout} type="submit" className="absolute bottom-4 left-6 flex items-center gap-3 text-sm hover:bg-red-600 px-4 py-2 rounded-md cursor-pointer transition">
+          <MdLogout />
+          <span>Log Out</span>
+        </button>
       </div>
-    </>
+
+      {/* Hamburger / Close Button */}
+      <button
+        className={`md:hidden fixed ${isOpen ? "top-0" : "top-5"} z-50 p-2 rounded-md transition-all duration-300 ${
+          isOpen ? "left-64" : "left-4"
+        } bg-purple-600 text-white`}
+        onClick={toggleSidebar}
+      >
+        {isOpen ? <FaTimes /> : <FaBars />}
+      </button>
+
+      {/* Main Content */}
+      <div className={`flex-1 bg-gray-100 min-h-screen transition-all duration-300 ease-in-out ${
+        isOpen ? "ml-0 md:ml-64" : "ml-0"
+      }`}>
+        <div className="p-6">
+          <Outlet />
+        </div>
+      </div>
+    </div>
   );
 };
 
