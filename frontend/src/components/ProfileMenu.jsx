@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { FaUserCog, FaSignOutAlt } from "react-icons/fa";
+import { FaUserCog, FaSignOutAlt, FaUser } from "react-icons/fa";
 import axios from "axios";
+import { Link } from "react-router-dom";
+import { IoSettingsOutline } from "react-icons/io5";
 
 const ProfileMenu = ({ onSignOut }) => {
   const [userData, setUserData] = useState(null);
@@ -59,7 +61,7 @@ const ProfileMenu = ({ onSignOut }) => {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+        <div className="absolute right-0 mt-2 w-60 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
           <div className="p-4 border-b">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-lg uppercase">
@@ -86,6 +88,19 @@ const ProfileMenu = ({ onSignOut }) => {
             >
               <FaUserCog /> Manage Account
             </button>
+              <Link
+                to="/dashboard"
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+              >
+                <FaUser /> Profile
+              </Link>
+              <Link
+                to="/dashboard/settings"
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+              >
+                <IoSettingsOutline /> Settings
+              </Link>
+
             <button
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 text-red-600"
               onClick={onSignOut}
