@@ -1,15 +1,15 @@
-import Navbar from "../components/Navbar";
-import Hero from "../components/Hero";
-import Features from "../components/Features";
-import Testimonials from "../components/Testimonials";
-import FeedbackForm from "../components/FeedbackForm";
-import Footer from "../components/Footer";
-import HowItWorks from "../components/HowItWorks";
-import Pricing from "../components/Pricing";
+import Navbar from "../../components/common/Navbar";
+import Hero from "../../components/home/Hero";
+import Features from "../../components/home/Features";
+import Testimonials from "../../components/home/Testimonials";
+import FeedbackForm from "../../components/home/FeedbackForm";
+import Footer from "../../components/common/Footer";
+import HowItWorks from "../../components/home/HowItWorks";
+import Pricing from "../../components/home/Pricing";
 import { useLocation } from "react-router-dom";
+import FAQs from "../../components/faqs/FAQs";
+import CallToAction from "../../components/home/CallToAction";
 import { useEffect } from "react";
-import FAQs from "../components/FAQs";
-import CallToAction from "../components/CallToAction";
 
 const HomePage = () => {
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import Navbar from "./Navbar";
-import Loader from "./Loader";
+import Navbar from "../common/Navbar";
+import Loader from "../common/Navbar";
 import { FaArrowLeft } from "react-icons/fa";
 import { motion } from "framer-motion";
 

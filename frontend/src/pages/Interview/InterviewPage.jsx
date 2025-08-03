@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import Navbar from "../components/Navbar";
-import Loader from "../components/Loader";
-import Feedback from "../components/Feedback";
-import CancelModal from "../components/CancelModal";
-import QuestionDisplay from "../components/QuestionDisplay";
-import RecordingControls from "../components/RecordingControls";
-import NavigationButtons from "../components/NavigationButtons";
-import VideoRecorder from "../components/VideoRecorder";
+import Navbar from "../../components/common/Navbar";
+import Loader from "../../components/common/Loader";
+import Feedback from "../../components/feedback/Feedback";
+import CancelModal from "../../components/common/DeleteModal";
+import QuestionDisplay from "../../components/interview/QuestionDisplay";
+import RecordingControls from "../../components/interview/RecordingControls";
+import NavigationButtons from "../../components/shared/NavigationButtons";
+import VideoRecorder from "../../components/interview/VideoRecorder";
 
 const InterviewPage = () => {
   const { interviewId } = useParams();

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-import StartInterview from "./StartInterview";
-import Loader from "./Loader";
+import StartInterview from "../interview/StartInterview";
+import Loader from "../common/Loader";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);

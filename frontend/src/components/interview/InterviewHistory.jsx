@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { AiFillDelete } from "react-icons/ai";
-import DeleteModal from "./DeleteModal";
-import Loader from "./Loader";
-import Pagination from "./Pagination";
+import DeleteModal from "../common/DeleteModal";
+import Loader from "../common/Loader";
+import Pagination from "../shared/Pagination";
 
 const InterviewHistory = () => {
   const [interviews, setInterviews] = useState([]);

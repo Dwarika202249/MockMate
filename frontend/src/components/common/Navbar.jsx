@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { isAuthenticated } from "../utils/auth";
+import { isAuthenticated } from "../../utils/auth";
 import { HiMenu, HiX } from "react-icons/hi";
 import { RiDashboardFill } from "react-icons/ri";
 import { IoHome } from "react-icons/io5";

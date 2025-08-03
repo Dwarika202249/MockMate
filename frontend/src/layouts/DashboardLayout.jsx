@@ -8,7 +8,7 @@ import { FaHistory } from "react-icons/fa";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FiHelpCircle } from "react-icons/fi";
 import { MdLogout } from "react-icons/md";
-import ProfileMenu from "./ProfileMenu";
+import ProfileMenu from "../components/common/ProfileMenu";
 
 const menuItems = [
   { label: "Dashboard", icon: <RiDashboardFill />, route: "/dashboard" },

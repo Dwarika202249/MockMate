@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import Loader from './Loader';
+import Loader from '../common/Loader';
 
 const StartInterview = ({ onClose }) => {
   const [type, setType] = useState('');

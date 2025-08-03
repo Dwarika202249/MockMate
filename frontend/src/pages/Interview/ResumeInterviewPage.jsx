@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // 🧭 Add this!
-import ResumeUpload from "./ResumeUpload";
-import ResumeReview from "./ResumeReview";
+import { useNavigate } from "react-router-dom";
+import ResumeUpload from "../../components/resume/ResumeUpload";
+import ResumeReview from "../../components/resume/ResumeReview";
 import axios from "axios";
 
 const ResumeInterviewPage = () => {
