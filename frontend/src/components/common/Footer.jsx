@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 const Footer = () => {
   return (
     <footer className="bg-[#0e031a] text-white py-8">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-col md:flex-row md:justify-between">
           <div className="mb-6 md:mb-0">
             <h3 className="text-lg font-bold mb-4">MockMate</h3>
-            <p className="text-sm w-[70%]">Empower your preparation with MockMate’s AI-powered mock interviews tailored to your role, experience level, and goals. From real-time feedback to expert-crafted questions, we help you build confidence, sharpen your skills, and accelerate your journey to landing your dream job.</p>
+            <p className="text-sm md:w-[70%]">Empower your preparation with MockMate’s AI-powered mock interviews tailored to your role, experience level, and goals. From real-time feedback to expert-crafted questions, we help you build confidence, sharpen your skills, and accelerate your journey to landing your dream job.</p>
           </div>
           <div className="mb-6 md:mb-0 w-[30%]">
             <h4 className="text-md font-semibold mb-2">Quick Links</h4>
@@ -20,7 +20,7 @@ const Footer = () => {
           </div>
           <div>
             <h4 className="text-md font-semibold mb-2">Contact Us</h4>
-            <p className="text-sm mb-2">Email: support@mockmate.com</p>
+            <p className="text-sm mb-2 w-[16rem]">Email: support@mockmate.com</p>
             <p className="text-sm">Phone: +1-234-567-890</p>
           </div>
         </div>
