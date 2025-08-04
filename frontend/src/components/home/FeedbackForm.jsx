@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AiOutlineCheckCircle } from "react-icons/ai";
+import { motion } from "framer-motion";
 
 const FeedbackForm = () => {
   const [formData, setFormData] = useState({ name: "", email: "", feedback: "" });
@@ -16,25 +17,63 @@ const FeedbackForm = () => {
 
   return (
     <section className="w-full py-20 px-4 sm:px-6 bg-white relative">
+      {/* Animated Header */}
       <div className="max-w-2xl mx-auto text-center mb-10">
-        <h2 className="text-3xl sm:text-4xl font-bold text-[#0e031a]">
+        <motion.h2
+          className="text-3xl sm:text-4xl font-bold text-[#0e031a]"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+        >
           We Value <span className="text-purple-500">Your Feedback</span>
-        </h2>
-        <p className="text-gray-600 mt-2">
+        </motion.h2>
+
+        <motion.p
+          className="text-gray-600 mt-2"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          viewport={{ once: true }}
+        >
           Help us improve MockMate — your insights power our platform.
-        </p>
+        </motion.p>
       </div>
 
-      <div className="max-w-xl mx-auto bg-white/60 backdrop-blur-md border border-gray-200 p-8 rounded-2xl shadow-xl">
+      {/* Animated Form / Success Card */}
+      <motion.div
+        className="max-w-xl mx-auto bg-white/60 backdrop-blur-md border border-gray-200 p-8 rounded-2xl shadow-xl"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.2 }}
+        viewport={{ once: true }}
+      >
         {submitted ? (
-          <div className="text-center text-green-600 flex flex-col items-center">
+          <motion.div
+            className="text-center text-green-600 flex flex-col items-center"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+          >
             <AiOutlineCheckCircle size={40} className="mb-2" />
             <p className="text-lg font-medium">Thank you for your feedback!</p>
             <p className="text-sm text-gray-500 mt-1">We truly appreciate your input.</p>
-          </div>
+          </motion.div>
         ) : (
-          <form onSubmit={onSubmit} className="space-y-6">
-            <div>
+          <motion.form
+            onSubmit={onSubmit}
+            className="space-y-6"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.7 }}
+            viewport={{ once: true }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
               <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-1">
                 Name
               </label>
@@ -47,9 +86,14 @@ const FeedbackForm = () => {
                 placeholder="Enter your name"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E3BEE]"
               />
-            </div>
+            </motion.div>
 
-            <div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.05 }}
+              viewport={{ once: true }}
+            >
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">
                 Email
               </label>
@@ -62,9 +106,14 @@ const FeedbackForm = () => {
                 placeholder="Enter your email"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E3BEE]"
               />
-            </div>
+            </motion.div>
 
-            <div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+            >
               <label htmlFor="feedback" className="block text-sm font-semibold text-gray-700 mb-1">
                 Feedback
               </label>
@@ -77,17 +126,19 @@ const FeedbackForm = () => {
                 rows="4"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E3BEE]"
               />
-            </div>
+            </motion.div>
 
-            <button
+            <motion.button
               type="submit"
               className="w-full py-2 px-4 bg-[#0e023f] text-white font-semibold rounded-lg hover:bg-[#150170] transition duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               Submit Feedback
-            </button>
-          </form>
+            </motion.button>
+          </motion.form>
         )}
-      </div>
+      </motion.div>
     </section>
   );
 };
