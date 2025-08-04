@@ -49,14 +49,26 @@ const FAQs = () => {
 
   return (
     <section className="max-w-4xl mx-auto px-6 py-24">
-      <h2 className="text-5xl font-bold text-center text-[#0e031a] mb-12">
+      {/* Animated Heading */}
+      <motion.h2
+        className="text-5xl font-bold text-center text-[#0e031a] mb-12"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        viewport={{ once: true }}
+      >
         Frequently <span className="text-purple-500">Asked</span> Questions
-      </h2>
+      </motion.h2>
+
       <div className="space-y-4">
         {faqs.map((faq, index) => (
-          <div
+          <motion.div
             key={index}
             className="bg-white border border-gray-200 rounded-xl shadow-lg"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1, duration: 0.5 }}
+            viewport={{ once: true }}
           >
             <button
               onClick={() => toggleFAQ(index)}
@@ -86,7 +98,7 @@ const FAQs = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
         ))}
       </div>
     </section>
