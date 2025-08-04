@@ -86,6 +86,19 @@ const testimonials = [
   },
 ];
 
+const textVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i = 1) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.15,
+      duration: 0.6,
+      ease: "easeOut",
+    },
+  }),
+};
+
 const Testimonials = () => {
   const [current, setCurrent] = useState(0);
 
@@ -99,9 +112,20 @@ const Testimonials = () => {
   return (
     <section className="m-10 py-24 px-4 bg-[#fefefe]">
       <div className="smoky-bg z-0"></div>
-      <h2 className="text-5xl -mt-8 font-bold mb-20 text-center text-[#0e031a] z-10 relative">
+
+      {/* Animated Section Heading */}
+      <motion.h2
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={{
+          hidden: { opacity: 0, y: 40 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.7 } },
+        }}
+        className="text-5xl -mt-8 font-bold mb-20 text-center text-[#0e031a] z-10 relative"
+      >
         What <span className="text-purple-500">Our Users</span> Say
-      </h2>
+      </motion.h2>
 
       <div className="relative w-full max-w-2xl mx-auto z-10">
         <AnimatePresence initial={false} mode="wait">
@@ -117,21 +141,54 @@ const Testimonials = () => {
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.6, ease: "easeInOut" }}
                 >
-                  <FaQuoteLeft className="text-3xl text-indigo-300 mb-4" />
-                  <img
+                  <motion.div
+                    custom={0}
+                    variants={textVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    <FaQuoteLeft className="text-3xl text-indigo-300 mb-4" />
+                  </motion.div>
+
+                  <motion.img
                     src={testimonial.avatar}
                     alt={testimonial.name}
-                    className="w-32 h-w-32 rounded-full mx-auto mb-4 border-4 border-indigo-200"
+                    className="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-indigo-200"
+                    custom={1}
+                    variants={textVariants}
+                    initial="hidden"
+                    animate="visible"
                   />
-                  <h3 className="text-xl font-semibold text-[#21093b] mb-1">
+
+                  <motion.h3
+                    className="text-xl font-semibold text-[#21093b] mb-1"
+                    custom={2}
+                    variants={textVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {testimonial.name}
-                  </h3>
-                  <p className="text-[#260c42] font-medium mb-1">
+                  </motion.h3>
+
+                  <motion.p
+                    className="text-[#260c42] font-medium mb-1"
+                    custom={3}
+                    variants={textVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {testimonial.role} @ {testimonial.company}
-                  </p>
-                  <p className="text-gray-500 italic text-base leading-relaxed">
+                  </motion.p>
+
+                  <motion.p
+                    className="text-gray-500 italic text-base leading-relaxed"
+                    custom={4}
+                    variants={textVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     "{testimonial.message}"
-                  </p>
+                  </motion.p>
                 </motion.div>
               )
           )}
@@ -142,3 +199,60 @@ const Testimonials = () => {
 };
 
 export default Testimonials;
+
+// const Testimonials = () => {
+//   const [current, setCurrent] = useState(0);
+
+//   useEffect(() => {
+//     const interval = setInterval(() => {
+//       setCurrent((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
+//     }, 4000);
+//     return () => clearInterval(interval);
+//   }, []);
+
+//   return (
+//     <section className="m-10 py-24 px-4 bg-[#fefefe]">
+//       <div className="smoky-bg z-0"></div>
+//       <h2 className="text-5xl -mt-8 font-bold mb-20 text-center text-[#0e031a] z-10 relative">
+//         What <span className="text-purple-500">Our Users</span> Say
+//       </h2>
+
+//       <div className="relative w-full max-w-2xl mx-auto z-10">
+//         <AnimatePresence initial={false} mode="wait">
+//           {testimonials.map(
+//             (testimonial, index) =>
+//               index === current && (
+//                 <motion.div
+//                   key={index}
+//                   className="absolute w-full flex flex-col items-center p-8 bg-white rounded-xl shadow-2xl text-center border border-gray-100 custom-border-1"
+//                   style={{ backgroundColor: testimonial.bgColor }}
+//                   initial={{ opacity: 0, x: 50 }}
+//                   animate={{ opacity: 1, x: 0 }}
+//                   exit={{ opacity: 0, x: -50 }}
+//                   transition={{ duration: 0.6, ease: "easeInOut" }}
+//                 >
+//                   <FaQuoteLeft className="text-3xl text-indigo-300 mb-4" />
+//                   <img
+//                     src={testimonial.avatar}
+//                     alt={testimonial.name}
+//                     className="w-32 h-w-32 rounded-full mx-auto mb-4 border-4 border-indigo-200"
+//                   />
+//                   <h3 className="text-xl font-semibold text-[#21093b] mb-1">
+//                     {testimonial.name}
+//                   </h3>
+//                   <p className="text-[#260c42] font-medium mb-1">
+//                     {testimonial.role} @ {testimonial.company}
+//                   </p>
+//                   <p className="text-gray-500 italic text-base leading-relaxed">
+//                     "{testimonial.message}"
+//                   </p>
+//                 </motion.div>
+//               )
+//           )}
+//         </AnimatePresence>
+//       </div>
+//     </section>
+//   );
+// };
+
+// export default Testimonials;
