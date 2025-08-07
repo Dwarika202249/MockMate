@@ -12,12 +12,13 @@ import Register from "../components/auth/Register";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Dashboard from "../components/dashboard/Dashboard";
 import Overview from "../components/dashboard/Overview";
-import ResumeInterviewPage from "../pages/Interview/ResumeInterviewPage";
 import InterviewHistory from "../components/interview/InterviewHistory";
 import FAQs from "../components/faqs/FAQs";
 import Settings from "../components/shared/Settings";
 import InterviewPage from "../pages/Interview/InterviewPage";
 import InterviewDetails from "../components/interview/InterviewDetails";
+import ResumePage from "../pages/Interview/ResumePage";
+import ResumeInterviewPage from "../pages/Interview/ResumeInterviewPage";
 
 const PrivateRoute = ({ element }) => {
   return isAuthenticated() ? element : <Navigate to="/login" />;
@@ -51,7 +52,8 @@ function AppRoutes() {
         >
           <Route index element={<Dashboard />} />
           <Route path="overview" element={<Overview />} />
-          <Route path="resume" element={<ResumeInterviewPage />} />
+          <Route path="resume" element={<ResumePage />} />
+          <Route path="resume-interview/:interviewId" element={<ResumeInterviewPage />} />
           <Route path="interview-history" element={<InterviewHistory />} />
           <Route path="faqs" element={<FAQs />} />
           <Route path="settings" element={<Settings />} />

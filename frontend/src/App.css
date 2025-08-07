@@ -4,6 +4,16 @@
   box-sizing: border-box;
 }
 
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #6b21a8;
+  border-radius: 8px;
+}
+
+
 @keyframes floatSlow {
   0%,
   100% {
