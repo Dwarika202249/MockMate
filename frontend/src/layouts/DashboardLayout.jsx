@@ -12,11 +12,28 @@ import ProfileMenu from "../components/common/ProfileMenu";
 
 const menuItems = [
   { label: "Dashboard", icon: <RiDashboardFill />, route: "/dashboard" },
-  { label: "Take Interview", icon: <FaVideo />, route: "/dashboard/resume" },
-  { label: "Progress Tracking", icon: <MdTrendingUp />, route: "/dashboard/overview" },
-  { label: "Interview History", icon: <FaHistory />, route: "/dashboard/interview-history" },
+  {
+    label: "Take Interview",
+    icon: <FaVideo />,
+    route: "/dashboard/resume",
+    beta: true,
+  },
+  {
+    label: "Progress Tracking",
+    icon: <MdTrendingUp />,
+    route: "/dashboard/overview",
+  },
+  {
+    label: "Interview History",
+    icon: <FaHistory />,
+    route: "/dashboard/interview-history",
+  },
   { label: "FAQs", icon: <FiHelpCircle />, route: "/dashboard/faqs" },
-  { label: "Settings", icon: <IoSettingsOutline />, route: "/dashboard/settings" },
+  {
+    label: "Settings",
+    icon: <IoSettingsOutline />,
+    route: "/dashboard/settings",
+  },
 ];
 
 const DashboardLayout = () => {
@@ -65,20 +82,29 @@ const DashboardLayout = () => {
             <Link
               key={idx}
               to={item.route}
-              className={`flex items-center gap-3 text-sm px-4 py-2 rounded-md transition ${
-                isActive(item.route)
-                  ? "bg-purple-600"
-                  : "hover:bg-purple-600"
+              className={`flex items-center justify-between text-sm px-4 py-2 rounded-md transition ${
+                isActive(item.route) ? "bg-purple-600" : "hover:bg-purple-600"
               }`}
             >
-              {item.icon}
-              <span>{item.label}</span>
+              <div className="flex items-center gap-3">
+                {item.icon}
+                <span>{item.label}</span>
+              </div>
+              {item.beta && (
+                <span className="ml-2 text-[10px] font-semibold text-yellow-300 bg-yellow-700/30 px-2 py-0.5 rounded-full">
+                  BETA
+                </span>
+              )}
             </Link>
           ))}
         </nav>
 
         {/* Logout */}
-        <button onClick={handleLogout} type="submit" className="absolute bottom-4 left-6 flex items-center gap-3 text-sm hover:bg-red-600 px-4 py-2 rounded-md cursor-pointer transition">
+        <button
+          onClick={handleLogout}
+          type="submit"
+          className="absolute bottom-4 left-6 flex items-center gap-3 text-sm hover:bg-red-600 px-4 py-2 rounded-md cursor-pointer transition"
+        >
           <MdLogout />
           <span>Log Out</span>
         </button>
@@ -95,11 +121,15 @@ const DashboardLayout = () => {
       </button>
 
       {/* Main Content */}
-      <div className={`flex-1 bg-gray-100 min-h-screen transition-all duration-300 ease-in-out ${
-        isOpen ? "ml-0 md:ml-64" : "ml-0"
-      }`}>
+      <div
+        className={`flex-1 bg-gray-100 min-h-screen transition-all duration-300 ease-in-out ${
+          isOpen ? "ml-0 md:ml-64" : "ml-0"
+        }`}
+      >
         <div className="p-6">
-          <div className="flex justify-end"><ProfileMenu onSignOut={handleLogout} /></div>
+          <div className="flex justify-end">
+            <ProfileMenu onSignOut={handleLogout} />
+          </div>
           <Outlet />
         </div>
       </div>
@@ -108,4 +138,3 @@ const DashboardLayout = () => {
 };
 
 export default DashboardLayout;
-
