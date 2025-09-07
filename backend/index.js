@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const authRoutes = require("./routes/auth");
 const interviewRoutes = require('./routes/interview');
+const resumeParserRoute = require('./routes/resumeParser');
 const cors = require("cors");
 
 dotenv.config();
@@ -15,6 +16,7 @@ app.use(express.json());
 //routes
 app.use("/api/auth", authRoutes);
 app.use('/api/interview', interviewRoutes);
+app.use('/api/resume-parser', resumeParserRoute);
 
 //mongodb connection
 const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/";

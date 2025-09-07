@@ -1,65 +1,314 @@
-import { useState } from "react";
-import { BiEdit } from "react-icons/bi";
+import { useRef, useState } from "react";
+import axios from "axios";
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+import { jsPDF } from "jspdf";
 
-const ResumeReview = ({ resumeData, onConfirm }) => {
-  const [editableData, setEditableData] = useState(resumeData || {});
-  const [additionalPrompt, setAdditionalPrompt] = useState("");
+import pdfWorker from "pdfjs-dist/build/pdf.worker?url";
+import ResumePreviewModal from "./ResumePreviewModal";
+import InterviewPrepModal from "./InterviewPrepModal";
+import { useNavigate } from "react-router-dom";
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-  const handleChange = (e, key) => {
-    setEditableData({
-      ...editableData,
-      [key]: e.target.value,
-    });
+const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
+  const [editableData, setEditableData] = useState(parsedData);
+  const [numPages, setNumPages] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(0.8);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const skillsInputRef = useRef(null);
+  const navigate = useNavigate();
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditableData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleConfirm = () => {
-    onConfirm({
-      resume: editableData,
-      additionalPrompt,
+  const handleSave = async () => {
+    const token = localStorage.getItem("token");
+    const rawText = resumeText;
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/api/resume-parser/save-parsed-resume`,
+        { ...editableData, rawText },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.status === 200 || 201) {
+        setSuccessMessage("✅ Resume saved successfully!");
+        setTimeout(() => setSuccessMessage(""), 4000);
+        return true;
+      }
+    } catch (error) {
+      console.error("Save failed", error);
+      setSuccessMessage("❌ Failed to save resume");
+      return false;
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    let y = 10;
+
+    doc.setFontSize(14);
+    doc.text("Parsed Resume Details", 10, y);
+    y += 10;
+
+    Object.entries(editableData).forEach(([key, value]) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(`${key.charAt(0).toUpperCase() + key.slice(1)}:`, 10, y);
+      y += 7;
+
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(value.toString(), 180);
+      doc.text(lines, 10, y);
+      y += lines.length * 6 + 4;
+
+      if (y > 270) {
+        doc.addPage();
+        y = 10;
+      }
     });
+
+    doc.save("parsed_resume.pdf");
+  };
+
+  const handleStartInterview = () => {
+    setShowInterviewModal(false);
+    navigate("/resume-interview/123");
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold mb-4 text-indigo-700">Review and Edit Your Resume</h2>
+    <>
+      <div className="flex flex-col md:flex-row gap-5 px-3">
+        {/* Left: Editable Parsed Resume */}
+        <div className="w-full md:w-1/2 space-y-3 max-h-[90vh] overflow-y-auto pr-2">
+          <div className="sticky top-0 z-10 bg-[#0e031a] pb-2">
+            <h2 className="text-lg font-semibold text-white">
+              Parsed & Editable Resume Info
+            </h2>
+          </div>
 
-      <div className="space-y-4">
-        {Object.keys(editableData).map((key) => (
-          <div key={key} className="flex flex-col">
-            <label className="text-lg font-semibold text-indigo-500 capitalize">{key}</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={editableData[key]}
-                onChange={(e) => handleChange(e, key)}
-                className="mt-1 p-2 border rounded-lg w-full"
-              />
-              <BiEdit size={20} className="text-indigo-600" />
+          {Object.entries(editableData).map(([key, value]) => (
+            <div key={key} className="space-y-1">
+              <label className="block text-sm font-medium capitalize text-purple-900">
+                {key}
+              </label>
+              {key === "skills" ? (
+                <div>
+                  <label className="block font-medium capitalize">{key}</label>
+                  <div className="flex flex-wrap items-center gap-2 border-b border-white bg-white/5 px-2 py-1 rounded">
+                    {Array.isArray(editableData.skills)
+                      ? editableData.skills.map((skill, index) => (
+                          <span
+                            key={index}
+                            className="bg-purple-900 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1"
+                          >
+                            {skill}
+                            <button
+                              onClick={() => {
+                                const updated = editableData.skills.filter(
+                                  (_, i) => i !== index
+                                );
+                                setEditableData((prev) => ({
+                                  ...prev,
+                                  skills: updated,
+                                }));
+                              }}
+                              className="text-white hover:text-gray-300 focus:outline-none"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))
+                      : null}
+
+                    {/* Input to add new skill */}
+                    <input
+                      type="text"
+                      ref={skillsInputRef}
+                      placeholder="Add skill..."
+                      className="bg-transparent text-white text-sm px-1 py-0.5 focus:outline-none flex-1 min-w-[80px]"
+                      onKeyDown={(e) => {
+                        if (
+                          (e.key === "Enter" || e.key === ",") &&
+                          e.target.value.trim() !== ""
+                        ) {
+                          e.preventDefault();
+                          const newSkill = e.target.value.trim();
+                          const updated = Array.isArray(editableData.skills)
+                            ? [...editableData.skills, newSkill]
+                            : [newSkill];
+                          setEditableData((prev) => ({
+                            ...prev,
+                            skills: updated,
+                          }));
+                          e.target.value = "";
+                        } else if (
+                          e.key === "Backspace" &&
+                          e.target.value === "" &&
+                          editableData.skills?.length
+                        ) {
+                          const updated = [...editableData.skills];
+                          updated.pop();
+                          setEditableData((prev) => ({
+                            ...prev,
+                            skills: updated,
+                          }));
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <textarea
+                  name={key}
+                  value={value}
+                  onChange={handleInputChange}
+                  placeholder={`Edit ${key}`}
+                  rows={
+                    key === "summary" ||
+                    key === "experience" ||
+                    key === "education"
+                      ? 3
+                      : 2
+                  }
+                  className="w-full bg-white/5 text-white border-0 border-b border-white focus:border-b-2 focus:ring-0 focus:outline-none focus:backdrop-blur-sm focus:border-purple-900/80 placeholder:text-white/50 text-sm px-1 py-1"
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Right: PDF Resume Preview with Pagination */}
+        <div className="w-full md:w-1/2 mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="sticky top-0 z-10 bg-[#0e031a] pb-2">
+            <h2 className="text-xl font-semibold mb-2 text-white">
+              Original Resume Preview
+            </h2>
+          </div>
+          <div className="border shadow rounded p-2 space-y-3 bg-[#201d33] text-white">
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center mb-2">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage <= 1}
+                className="bg-purple-900 text-white px-3 py-1 rounded disabled:opacity-50"
+              >
+                ⬅ Prev
+              </button>
+
+              <p className="text-sm">
+                Page <span className="font-bold">{currentPage}</span> of{" "}
+                <span className="font-bold">{numPages || "..."}</span>
+              </p>
+
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, numPages))
+                }
+                disabled={currentPage >= numPages}
+                className="bg-purple-900 text-white px-3 py-1 rounded disabled:opacity-50"
+              >
+                Next ➡
+              </button>
+            </div>
+
+            {/* PDF Document */}
+            <div className="border shadow rounded p-2 bg-[#0e031a]">
+              {/* Zoom Controls */}
+              <div className="flex justify-center gap-4 mb-3">
+                <button
+                  onClick={() =>
+                    setZoomLevel((prev) => Math.max(prev - 0.2, 0.6))
+                  }
+                  className="bg-purple-900 text-white px-3 py-1 rounded disabled:opacity-50"
+                >
+                  ➖
+                </button>
+                <span className="text-white font-medium">
+                  Zoom: {(zoomLevel * 100).toFixed(0)}%
+                </span>
+                <button
+                  onClick={() =>
+                    setZoomLevel((prev) => Math.min(prev + 0.2, 2))
+                  }
+                  className="bg-purple-900 text-white px-3 py-1 rounded disabled:opacity-50"
+                >
+                  ➕
+                </button>
+              </div>
+
+              {/* PDF Display */}
+              <div className="border rounded overflow-auto max-h-[600px]">
+                <Document
+                  file={pdfUrl}
+                  onLoadSuccess={({ numPages }) => {
+                    setNumPages(numPages);
+                    setCurrentPage(1);
+                  }}
+                  loading={<p className="text-white">Loading PDF...</p>}
+                >
+                  <Page
+                    pageNumber={currentPage}
+                    scale={zoomLevel}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                  />
+                </Document>
+              </div>
             </div>
           </div>
-        ))}
+        </div>
       </div>
+      <div className="flex gap-2 m-5">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-purple-900 text-white px-4 py-2 rounded hover:bg-purple-800"
+        >
+          Preview & Save
+        </button>
 
-      <div className="mt-6">
-        <label className="text-lg font-semibold text-indigo-500">
-          Additional Prompt (optional)
-        </label>
-        <textarea
-          value={additionalPrompt}
-          onChange={(e) => setAdditionalPrompt(e.target.value)}
-          placeholder="Tell us your job role, domain, level, or anything else to personalize the interview"
-          rows={4}
-          className="mt-2 p-3 border rounded-lg w-full resize-none"
+        <button
+          onClick={handleDownloadPDF}
+          className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-600"
+        >
+          Download PDF
+        </button>
+      </div>
+      {successMessage && (
+        <div className="mt-3 text-green-600 font-medium">{successMessage}</div>
+      )}
+
+      // resume preview modal
+      <ResumePreviewModal
+          isOpen={isModalOpen}
+          setIsOpen={setIsModalOpen}
+          editableData={editableData}
+          onSave={async () => {
+            const success = await handleSave();
+            if (success) {
+              setShowInterviewModal(true);}
+            return success;
+          }}
         />
-      </div>
 
-      <button
-        onClick={handleConfirm}
-        className="mt-6 bg-green-500 text-white px-4 py-2 rounded-lg w-full hover:bg-green-600"
-      >
-        Confirm and Generate Interview
-      </button>
-    </div>
+      // InterviewPrep Modal
+      <InterviewPrepModal
+        isOpen={showInterviewModal}
+        setIsOpen={setShowInterviewModal}
+        onStart={handleStartInterview}
+      />
+    </>
   );
 };
 
