@@ -84,7 +84,7 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
 
   const handleStartInterview = () => {
     setShowInterviewModal(false);
-    navigate("/dashboard/resume-interview/123");
+    navigate("/resume-interview/123");
   };
 
   return (

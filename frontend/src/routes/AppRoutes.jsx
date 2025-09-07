@@ -53,11 +53,11 @@ function AppRoutes() {
           <Route index element={<Dashboard />} />
           <Route path="overview" element={<Overview />} />
           <Route path="resume" element={<ResumePage />} />
-          <Route path="resume-interview/:interviewId" element={<ResumeInterviewPage />} />
           <Route path="interview-history" element={<InterviewHistory />} />
           <Route path="faqs" element={<FAQs />} />
           <Route path="settings" element={<Settings />} />
         </Route>
+        <Route path="/resume-interview/:interviewId" element={<ResumeInterviewPage />} />
         <Route path="/interview/:interviewId" element={<InterviewPage />} />
         <Route path="/history/:interviewId/details" element={<InterviewDetails />} />
       </Routes>
