@@ -7,7 +7,7 @@ import ChatPanel from "../../components/resume/ChatPanel";
 import OnboardingModal from "../../components/resume/OnboardingModal";
 import AnswerEvaluator from "../../utils/AnswerEvaluator";
 import Loader from "../../components/common/Loader";
-import EndInterviewModal from "../../components/resume/EndInterviewModal";
+import DeleteModal from "../../components/common/DeleteModal";
 
 const DUMMY_QUESTIONS = [
   { id: 1, text: "Tell me about yourself.", keywords: ["yourself", "background", "experience"] },
@@ -30,7 +30,8 @@ const ResumeInterviewPage = ({ questions = DUMMY_QUESTIONS }) => {
   const [showEndModal, setShowEndModal] = useState(false);
   const silenceTimerRef = useRef(null);
 
-  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } =
+    useSpeechRecognition();
 
   const speakAI = (text, callback) => {
     const synth = window.speechSynthesis;
@@ -60,13 +61,18 @@ const ResumeInterviewPage = ({ questions = DUMMY_QUESTIONS }) => {
     // eslint-disable-next-line
   }, [transcript]);
 
-  const pushAIMessage = (text) => setMessages((m) => [...m, { id: `ai-${Date.now()}`, sender: "ai", text }]);
-  const pushUserMessage = (text) => setMessages((m) => [...m, { id: `user-${Date.now()}`, sender: "user", text }]);
+  const pushAIMessage = (text) =>
+    setMessages((m) => [...m, { id: `ai-${Date.now()}`, sender: "ai", text }]);
+  const pushUserMessage = (text) =>
+    setMessages((m) => [...m, { id: `user-${Date.now()}`, sender: "user", text }]);
 
   const updateLiveUserBubble = (text) => {
     setMessages((prev) => {
       const withoutLive = prev.filter((msg) => !msg._liveTemp);
-      return [...withoutLive, { id: "user-live", sender: "user", text: text || "...", _liveTemp: true }];
+      return [
+        ...withoutLive,
+        { id: "user-live", sender: "user", text: text || "...", _liveTemp: true },
+      ];
     });
   };
 
@@ -135,16 +141,16 @@ const ResumeInterviewPage = ({ questions = DUMMY_QUESTIONS }) => {
         setCurrentIndex(nextIndex);
         askQuestion(nextIndex);
       } else {
-        endInterview("Interview completed.");
+        handleEndInterview("Interview completed.");
       }
     }, 2000);
   };
 
-  const endInterview = (msg) => {
+  const handleEndInterview = (msg) => {
     stopListening();
     setRunning(false);
     setMessages((m) => [...m, { id: `system-end-${Date.now()}`, sender: "system", text: msg }]);
-    setShowEndModal(true);
+    navigate(`/feedback/${interviewId || "latest"}`);
   };
 
   if (!browserSupportsSpeechRecognition) {
@@ -156,12 +162,21 @@ const ResumeInterviewPage = ({ questions = DUMMY_QUESTIONS }) => {
       <div className="max-w-7xl mx-auto grid grid-cols-12 gap-6">
         {/* Left side: Interview */}
         <div className="col-span-12 md:col-span-8 space-y-4">
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-[#824fb8] rounded-lg shadow p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#824fb8] rounded-lg shadow p-4"
+          >
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-semibold text-white">Live Interview</h3>
               <div className="flex items-center gap-2">
-                <div className="text-sm text-gray-100">Q {currentIndex + 1} / {questions.length}</div>
-                <button onClick={() => endInterview("Interview ended by user.")} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+                <div className="text-sm text-gray-100">
+                  Q {currentIndex + 1} / {questions.length}
+                </div>
+                <button
+                  onClick={() => setShowEndModal(true)}
+                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                >
                   End
                 </button>
               </div>
@@ -169,14 +184,23 @@ const ResumeInterviewPage = ({ questions = DUMMY_QUESTIONS }) => {
 
             {/* Quick stats */}
             <div className="flex justify-between items-center bg-gray-100 p-3 rounded mt-4">
-              <div className="text-sm text-gray-600"><span className="text-green-600 font-bold">Answered:</span> {Object.keys(answers).length}</div>
-              <div className="text-sm text-gray-600"><span className="text-yellow-600 font-bold">Progress:</span> {Math.round((Object.keys(answers).length / questions.length) * 100)}%</div>
-              <div className="text-sm text-gray-800"><span className="text-blue-600 font-bold">Listening:</span> {listeningLive ? "Yes" : "No"}</div>
+              <div className="text-sm text-gray-600">
+                <span className="text-green-600 font-bold">Answered:</span>{" "}
+                {Object.keys(answers).length}
+              </div>
+              <div className="text-sm text-gray-600">
+                <span className="text-yellow-600 font-bold">Progress:</span>{" "}
+                {Math.round((Object.keys(answers).length / questions.length) * 100)}%
+              </div>
+              <div className="text-sm text-gray-800">
+                <span className="text-blue-600 font-bold">Listening:</span>{" "}
+                {listeningLive ? "Yes" : "No"}
+              </div>
             </div>
 
             {/* Avatars */}
             <div className="grid grid-cols-2 gap-4 mt-4">
-              <AvatarStage type="user" speaking={false} />
+              <AvatarStage type="user" speaking={false} running={running} />
               <AvatarStage type="ai" speaking={listeningLive} />
             </div>
 
@@ -196,15 +220,18 @@ const ResumeInterviewPage = ({ questions = DUMMY_QUESTIONS }) => {
 
       <AnimatePresence>
         {showOnboarding && (
-          <OnboardingModal onClose={() => setShowOnboarding(false)} onStart={handleStartInterview} />
+          <OnboardingModal
+            onClose={() => setShowOnboarding(false)}
+            onStart={handleStartInterview}
+          />
         )}
       </AnimatePresence>
 
       {showEndModal && (
-        <EndInterviewModal
+        <DeleteModal
+          show={showEndModal}
           onClose={() => setShowEndModal(false)}
-          onDashboard={() => navigate("/dashboard")}
-          onFeedback={() => navigate(`/feedback/${interviewId || "latest"}`)}
+          onConfirm={() => handleEndInterview("Interview ended by user.")}
         />
       )}
     </div>
@@ -212,4 +239,3 @@ const ResumeInterviewPage = ({ questions = DUMMY_QUESTIONS }) => {
 };
 
 export default ResumeInterviewPage;
-
