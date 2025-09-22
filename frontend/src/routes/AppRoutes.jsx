@@ -15,7 +15,7 @@ import Overview from "../components/dashboard/Overview";
 import InterviewHistory from "../components/interview/InterviewHistory";
 import FAQs from "../components/faqs/FAQs";
 import Settings from "../components/shared/Settings";
-import InterviewPage from "../pages/Interview/InterviewPage";
+import FreeInterviewPage from "../pages/Interview/FreeInterviewPage";
 import InterviewDetails from "../components/interview/InterviewDetails";
 import ResumePage from "../pages/Interview/ResumePage";
 import ResumeInterviewPage from "../pages/Interview/ResumeInterviewPage";
@@ -58,7 +58,7 @@ function AppRoutes() {
           <Route path="settings" element={<Settings />} />
         </Route>
         <Route path="/resume-interview/:interviewId" element={<ResumeInterviewPage />} />
-        <Route path="/interview/:interviewId" element={<InterviewPage />} />
+        <Route path="/interview/:interviewId" element={<FreeInterviewPage />} />
         <Route path="/history/:interviewId/details" element={<InterviewDetails />} />
       </Routes>
   );

@@ -11,7 +11,7 @@ import RecordingControls from "../../components/interview/RecordingControls";
 import NavigationButtons from "../../components/shared/NavigationButtons";
 import VideoRecorder from "../../components/interview/VideoRecorder";
 
-const InterviewPage = () => {
+const FreeInterviewPage = () => {
   const { interviewId } = useParams();
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -198,4 +198,4 @@ const InterviewPage = () => {
   );
 };
 
-export default InterviewPage;
+export default FreeInterviewPage;

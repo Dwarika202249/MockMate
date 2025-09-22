@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-import StartInterview from "../interview/StartInterview";
+import FreeInterview from "../interview/FreeInterview";
 import Loader from "../common/Loader";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -102,7 +102,7 @@ const Dashboard = () => {
           Create Interview <span className="ml-3 font-bold text-5xl">+</span>
         </button>
       </motion.div>
-      {/* Modal for StartInterview */}
+      {/* Modal for FreeInterview */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div
@@ -126,7 +126,7 @@ const Dashboard = () => {
               >
                 &times;
               </button>
-              <StartInterview onClose={handleCloseModal} />
+              <FreeInterview onClose={handleCloseModal} />
             </motion.div>
           </motion.div>
         )}

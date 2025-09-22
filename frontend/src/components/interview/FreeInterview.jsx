@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../common/Loader';
 
-const StartInterview = ({ onClose }) => {
+const FreeInterview = ({ onClose }) => {
   const [type, setType] = useState('');
   const [details, setDetails] = useState('');
   const [numQuestions, setNumQuestions] = useState(5);
@@ -109,4 +109,4 @@ const StartInterview = ({ onClose }) => {
   );
 };
 
-export default StartInterview;
+export default FreeInterview;
