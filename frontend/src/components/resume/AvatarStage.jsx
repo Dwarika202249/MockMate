@@ -12,7 +12,8 @@ const AvatarStage = ({
     lottieAI,
     onVideoToggle,
     onAudioToggle,
-    audioEnabled = true
+    audioEnabled = true,
+    isUserTurn = false
 }) => {
     const [showVideo, setShowVideo] = useState(true);
     const [videoError, setVideoError] = useState(false);
@@ -31,7 +32,7 @@ const AvatarStage = ({
 
     const renderControls = useCallback(() => {
         return (
-            <div className="absolute bottom-4 right-4 flex space-x-2">
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
                 <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -63,39 +64,50 @@ const AvatarStage = ({
     if (type === "ai") {
         return (
             <div className="flex flex-col items-center">
-                <motion.div
-                    key={animationKey}
-                    initial={{ scale: 1 }}
-                    animate={speaking ? { 
-                        scale: [1, 1.05, 1],
-                        transition: { duration: 0.8, repeat: Infinity }
-                    } : {}}
-                    className="relative"
-                >
-                    {lottieAI ? (
-                        <div className="relative w-80 h-80 rounded-full overflow-hidden bg-[#2a1f3e] border-4 border-[#9589e6]">
-                            <Lottie 
-                                play={speaking} 
-                                loop 
-                                animationData={lottieAI} 
-                                style={{ width: '100%', height: '100%' }}
-                            />
-                        </div>
-                    ) : (
-                        <div className="w-80 h-80 rounded-full bg-[#2a1f3e] border-4 border-[#9589e6] flex items-center justify-center">
-                            <FiCpu className="w-24 h-24 text-[#9589e6]" />
-                        </div>
-                    )}
-                    {speaking && (
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="absolute bottom-4 right-4 bg-green-500 rounded-full p-2"
-                        >
-                            <FaMicrophone className="w-6 h-6 text-white" />
-                        </motion.div>
-                    )}
-                </motion.div>
+                {speaking && (
+                    <motion.div
+                        key={animationKey}
+                        initial={{ scale: 1 }}
+                        animate={{ 
+                            scale: [1, 1.05, 1],
+                            transition: { duration: 0.8, repeat: Infinity }
+                        }}
+                        className="relative"
+                    >
+                        {lottieAI ? (
+                            <div className="relative w-80 h-80 rounded-full overflow-hidden bg-[#2a1f3e] border-4 border-[#9589e6]">
+                                <Lottie 
+                                    play={true} 
+                                    loop 
+                                    animationData={lottieAI} 
+                                    style={{ width: '100%', height: '100%' }}
+                                />
+                            </div>
+                        ) : (
+                            <div className="w-80 h-80 rounded-full bg-[#2a1f3e] border-4 border-[#9589e6] flex items-center justify-center">
+                                <FiCpu className="w-24 h-24 text-[#9589e6]" />
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+                {!speaking && (
+                    <div className="relative">
+                        {lottieAI ? (
+                            <div className="relative w-80 h-80 rounded-full overflow-hidden bg-[#2a1f3e] border-4 border-[#9589e6]">
+                                <Lottie 
+                                    play={false} 
+                                    loop 
+                                    animationData={lottieAI} 
+                                    style={{ width: '100%', height: '100%' }}
+                                />
+                            </div>
+                        ) : (
+                            <div className="w-80 h-80 rounded-full bg-[#2a1f3e] border-4 border-[#9589e6] flex items-center justify-center">
+                                <FiCpu className="w-24 h-24 text-[#9589e6]" />
+                            </div>
+                        )}
+                    </div>
+                )}
                 <div className="mt-4 text-lg font-medium text-[#9589e6]">AI Interviewer</div>
                 {speaking && (
                     <motion.div
@@ -112,45 +124,82 @@ const AvatarStage = ({
     // User Avatar
     return (
         <div className="flex flex-col items-center">
-            <motion.div
-                animate={speaking ? { 
-                    y: [0, -4, 0],
-                    transition: { duration: 0.9, repeat: Infinity }
-                } : {}}
-                className="relative"
-            >
-                <div className="relative w-80 h-80 rounded-full overflow-hidden border-4 border-[#9589e6] bg-[#2a1f3e]">
-                    <AnimatePresence mode="wait">
-                        {showVideo && running && !videoError ? (
-                            <motion.div
-                                key="webcam"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="w-full h-full"
-                            >
-                                <Webcam
-                                    audio={false}
-                                    mirrored
-                                    className="w-full h-full object-cover"
-                                    onUserMediaError={() => setVideoError(true)}
-                                />
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="placeholder"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="w-full h-full flex items-center justify-center"
-                            >
-                                <FiUser className="w-24 h-24 text-[#9589e6]" />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                    {running && renderControls()}
+            {speaking && (
+                <motion.div
+                    animate={{ 
+                        y: [0, -4, 0],
+                        transition: { duration: 0.9, repeat: Infinity }
+                    }}
+                    className="relative"
+                >
+                    <div className="relative w-80 h-80 rounded-full overflow-hidden border-4 border-[#9589e6] bg-[#2a1f3e]">
+                        <AnimatePresence mode="wait">
+                            {showVideo && running && !videoError ? (
+                                <motion.div
+                                    key="webcam"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="w-full h-full"
+                                >
+                                    <Webcam
+                                        audio={false}
+                                        mirrored
+                                        className="w-full h-full object-cover"
+                                        onUserMediaError={() => setVideoError(true)}
+                                    />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="placeholder"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="w-full h-full flex items-center justify-center"
+                                >
+                                    <FiUser className="w-24 h-24 text-[#9589e6]" />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        {running && renderControls()}
+                    </div>
+                </motion.div>
+            )}
+            {!speaking && (
+                <div className="relative">
+                    <div className="relative w-80 h-80 rounded-full overflow-hidden border-4 border-[#9589e6] bg-[#2a1f3e]">
+                        <AnimatePresence mode="wait">
+                            {showVideo && running && !videoError ? (
+                                <motion.div
+                                    key="webcam"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="w-full h-full"
+                                >
+                                    <Webcam
+                                        audio={false}
+                                        mirrored
+                                        className="w-full h-full object-cover"
+                                        onUserMediaError={() => setVideoError(true)}
+                                    />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="placeholder"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="w-full h-full flex items-center justify-center"
+                                >
+                                    <FiUser className="w-24 h-24 text-[#9589e6]" />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        {running && renderControls()}
+                    </div>
                 </div>
-            </motion.div>
+            )}
             <div className="mt-4 text-lg font-medium text-[#9589e6]">You</div>
             {speaking && (
                 <motion.div
