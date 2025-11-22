@@ -1,13 +1,21 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const http = require('http');
 const authRoutes = require("./routes/auth");
 const interviewRoutes = require('./routes/interview');
 const resumeParserRoute = require('./routes/resumeParser');
+const setupWebSocket = require('./utils/websocket');
+const setupWorkers = require('./workers');
 const cors = require("cors");
 
 dotenv.config();
 const app = express();
+const server = http.createServer(app);
+
+// Set up WebSocket and Workers
+const io = setupWebSocket(server);
+setupWorkers();
 
 app.use(cors());
 
@@ -26,4 +34,4 @@ mongoose
   .catch((error) => console.log(error));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Server running on ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Server running on ${PORT}`));

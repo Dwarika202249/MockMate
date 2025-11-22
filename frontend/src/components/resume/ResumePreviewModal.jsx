@@ -67,11 +67,15 @@ const ResumePreviewModal = ({ isOpen, setIsOpen, editableData, onSave }) => {
                     Cancel
                   </button>
                   <button
-                    className="bg-purple-900 hover:bg-purple-800 text-white px-4 py-2 rounded"
+                    className="bg-purple-900 hover:bg-purple-800 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={async () => {
-                      const saved = await onSave();
-                      if (saved) {
-                        setIsOpen(false);
+                      try {
+                        const saved = await onSave();
+                        if (saved) {
+                          setIsOpen(false);
+                        }
+                      } catch (error) {
+                        console.error("Error in save:", error);
                       }
                     }}
                   >
