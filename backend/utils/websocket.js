@@ -18,7 +18,7 @@ function setupWebSocket(server) {
 
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            socket.userId = decoded.id;
+            socket.userId = decoded.user.id;
             next();
         } catch (err) {
             next(new Error('Authentication error'));
@@ -32,26 +32,20 @@ function setupWebSocket(server) {
         // Join user-specific room
         socket.join(`user_${socket.userId}`);
 
-        // Handle interview start
+        // Backwards-compatible basic events
         socket.on('interview:start', (interviewId) => {
             socket.join(`interview_${interviewId}`);
         });
 
-        // Handle answer submission
         socket.on('answer:submit', async (data) => {
-            const { interviewId, answer, question } = data;
-            
-            // Emit immediate acknowledgment
+            const { interviewId } = data;
             socket.emit('answer:received', { interviewId, status: 'processing' });
-            
-            // Broadcast local evaluation results immediately
             io.to(`interview_${interviewId}`).emit('evaluation:local', {
                 type: 'local',
-                result: data.localEvaluation
+                result: data.localEvaluation || null
             });
         });
 
-        // Handle AI feedback ready
         socket.on('feedback:ready', (data) => {
             io.to(`interview_${data.interviewId}`).emit('evaluation:ai', {
                 type: 'ai',
@@ -59,10 +53,39 @@ function setupWebSocket(server) {
             });
         });
 
-        // Handle interview end
         socket.on('interview:end', (interviewId) => {
             socket.leave(`interview_${interviewId}`);
         });
+
+        // New: support higher-level interview flow events to match frontend
+        try {
+            const interviewHandlers = require('../websocket/interviewHandlers');
+
+            socket.on('INITIALIZE_INTERVIEW', (data) => {
+                // delegate to handler which expects (io, socket, data)
+                interviewHandlers.INITIALIZE_INTERVIEW(io, socket, data).catch(err => {
+                    console.error('INITIALIZE_INTERVIEW handler error:', err);
+                    socket.emit('ERROR', { message: 'Failed to initialize interview' });
+                });
+            });
+
+            socket.on('SUBMIT_ANSWER', (data) => {
+                interviewHandlers.SUBMIT_ANSWER(io, socket, data).catch(err => {
+                    console.error('SUBMIT_ANSWER handler error:', err);
+                    socket.emit('ERROR', { message: 'Failed to submit answer' });
+                });
+            });
+
+            socket.on('REQUEST_NEXT_QUESTION', (data) => {
+                interviewHandlers.REQUEST_NEXT_QUESTION(io, socket, data).catch(err => {
+                    console.error('REQUEST_NEXT_QUESTION handler error:', err);
+                    socket.emit('ERROR', { message: 'Failed to get next question' });
+                });
+            });
+        } catch (err) {
+            // If interviewHandlers file is missing, log and continue
+            console.warn('No interviewHandlers module wired:', err.message);
+        }
 
         // Handle disconnection
         socket.on('disconnect', () => {

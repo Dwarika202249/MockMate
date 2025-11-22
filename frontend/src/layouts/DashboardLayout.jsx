@@ -21,7 +21,7 @@ const menuItems = [
   {
     label: "Progress Tracking",
     icon: <MdTrendingUp />,
-    route: "/dashboard/overview",
+    route: "/dashboard/progress",
   },
   {
     label: "Interview History",

@@ -27,7 +27,7 @@ const ResumeUpload = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/api/resume-parser/upload-resume`,
+        `${import.meta.env.VITE_API_URL}/resume-parser/upload-resume`,
         formData,
         {
           headers: {

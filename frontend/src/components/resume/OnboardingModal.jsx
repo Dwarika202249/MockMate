@@ -1,19 +1,35 @@
 import { motion } from "framer-motion";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiUser, FiBriefcase, FiSettings, FiArrowRight, FiArrowLeft, FiCheck } from 'react-icons/fi';
 
-const OnboardingModal = ({ onClose, onStart }) => {
+const OnboardingModal = ({ onClose, onStart, resumeData }) => {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
-        jobRole: '',
-        experience: '',
+        jobRole: resumeData?.jobRole || '',
+        experience: resumeData?.yearsOfExperience || resumeData?.experience?.length?.toString() || '',
+        name: resumeData?.name || '',
         preferences: {
             interviewStyle: 'standard',
             difficulty: 'medium',
             duration: '30',
-            focusAreas: []
+            focusAreas: [],
+            communicationStyle: 'professional',
+            interviewerPersonality: 'friendly'
         }
     });
+
+    // Update form data when resumeData changes (after async fetch)
+    useEffect(() => {
+        if (resumeData) {
+            console.log('📋 Updating form with resumeData:', resumeData);
+            setFormData(prev => ({
+                ...prev,
+                jobRole: resumeData.jobRole || prev.jobRole,
+                experience: resumeData.yearsOfExperience || resumeData.experience?.length?.toString() || prev.experience,
+                name: resumeData.name || prev.name
+            }));
+        }
+    }, [resumeData]);
 
     const updateFormData = (field, value) => {
         setFormData(prev => ({
@@ -33,11 +49,38 @@ const OnboardingModal = ({ onClose, onStart }) => {
         'Culture Fit'
     ];
 
+    const validateStep = (currentStep) => {
+        switch (currentStep) {
+            case 1:
+                return formData.name && formData.jobRole && formData.experience;
+            case 2:
+                return true; // All fields have defaults
+            case 3:
+                return formData.preferences.focusAreas.length >= 2;
+            default:
+                return true;
+        }
+    };
+
     const handleNext = () => {
+        if (!validateStep(step)) {
+            // You might want to add a proper error notification here
+            return;
+        }
+
         if (step < 3) {
             setStep(step + 1);
         } else {
-            onStart(formData);
+            const finalData = {
+                ...formData,
+                resumeContext: {
+                    skills: resumeData?.skills || [],
+                    experience: resumeData?.experience || [],
+                    education: resumeData?.education || [],
+                    summary: resumeData?.summary || ''
+                }
+            };
+            onStart(finalData);
         }
     };
 
@@ -83,9 +126,25 @@ const OnboardingModal = ({ onClose, onStart }) => {
                         <div className="space-y-6">
                             <h2 className="text-2xl font-bold text-[#9589e6] flex items-center">
                                 <FiUser className="mr-2" />
-                                Professional Profile
+                                Resume Details (Auto-filled)
                             </h2>
+                            <div className="bg-green-900 bg-opacity-20 border border-green-700 rounded-lg p-4 mb-4">
+                                <p className="text-green-300 text-sm">✓ These details are auto-filled from your resume. You can edit them if needed.</p>
+                            </div>
                             <div className="space-y-4">
+                                <div>
+                                    <label className="block text-gray-300 mb-2">
+                                        Your Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => updateFormData('name', e.target.value)}
+                                        className="w-full px-4 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6] border border-gray-500 hover:border-green-700 transition-colors"
+                                        placeholder="Enter your full name"
+                                    />
+                                    {resumeData?.name && <p className="text-xs text-green-400 mt-1">✓ From Resume: {resumeData.name}</p>}
+                                </div>
                                 <div>
                                     <label className="block text-gray-300 mb-2">
                                         What role are you interviewing for?
@@ -94,9 +153,10 @@ const OnboardingModal = ({ onClose, onStart }) => {
                                         type="text"
                                         value={formData.jobRole}
                                         onChange={(e) => updateFormData('jobRole', e.target.value)}
-                                        className="w-full px-4 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6]"
+                                        className="w-full px-4 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6] border border-gray-500 hover:border-green-700 transition-colors"
                                         placeholder="e.g., Senior Software Engineer"
                                     />
+                                    {resumeData?.jobRole && <p className="text-xs text-green-400 mt-1">✓ From Resume: {resumeData.jobRole}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-gray-300 mb-2">
@@ -106,9 +166,10 @@ const OnboardingModal = ({ onClose, onStart }) => {
                                         type="number"
                                         value={formData.experience}
                                         onChange={(e) => updateFormData('experience', e.target.value)}
-                                        className="w-full px-4 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6]"
+                                        className="w-full px-4 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6] border border-gray-500 hover:border-green-700 transition-colors"
                                         placeholder="e.g., 5"
                                     />
+                                    {formData.experience && <p className="text-xs text-green-400 mt-1">✓ From Resume</p>}
                                 </div>
                             </div>
                         </div>
@@ -133,6 +194,21 @@ const OnboardingModal = ({ onClose, onStart }) => {
                                         <option value="standard">Standard</option>
                                         <option value="behavioral">Behavioral</option>
                                         <option value="technical">Technical</option>
+                                        <option value="mixed">Mixed (Technical + Behavioral)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-gray-300 mb-2">
+                                        Interviewer Personality
+                                    </label>
+                                    <select
+                                        value={formData.preferences.interviewerPersonality}
+                                        onChange={(e) => updateFormData('preferences', { interviewerPersonality: e.target.value })}
+                                        className="w-full px-4 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6]"
+                                    >
+                                        <option value="friendly">Friendly and Supportive</option>
+                                        <option value="neutral">Professional and Neutral</option>
+                                        <option value="challenging">Challenging and Direct</option>
                                     </select>
                                 </div>
                                 <div>

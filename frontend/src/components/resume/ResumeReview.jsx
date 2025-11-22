@@ -5,6 +5,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { jsPDF } from "jspdf";
 import { FiDownload, FiSave } from "react-icons/fi";
+import { MdClose } from "react-icons/md";
 import { toast } from "react-hot-toast";
 
 import pdfWorker from "pdfjs-dist/build/pdf.worker?url";
@@ -23,6 +24,7 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("basic");
+  const [skillInput, setSkillInput] = useState("");
   const skillsInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -38,12 +40,47 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
     }));
   };
 
+  const handleAddSkill = (e) => {
+    if (e.key === "Enter" || e.type === "click") {
+      e.preventDefault();
+      const trimmedSkill = skillInput.trim();
+      
+      if (trimmedSkill && !editableData.skills?.includes(trimmedSkill)) {
+        setEditableData((prev) => ({
+          ...prev,
+          skills: [...(Array.isArray(prev.skills) ? prev.skills : prev.skills?.split(",").map(s => s.trim()) || []), trimmedSkill],
+        }));
+        setSkillInput("");
+        skillsInputRef.current?.focus();
+      } else if (editableData.skills?.includes(trimmedSkill)) {
+        toast.error("Skill already added!");
+      }
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove) => {
+    setEditableData((prev) => ({
+      ...prev,
+      skills: Array.isArray(prev.skills) 
+        ? prev.skills.filter((skill) => skill !== skillToRemove)
+        : prev.skills
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter((skill) => skill !== skillToRemove),
+    }));
+  };
+
   const handleSave = async () => {
     setLoading(true);
     const token = localStorage.getItem("token");
     try {
+      if (!token) {
+        toast.error("Authentication token not found. Please login again.");
+        return false;
+      }
+
       const res = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/api/resume-parser/save-parsed-resume`,
+        `${import.meta.env.VITE_API_URL}/resume-parser/save-parsed-resume`,
         {
           ...editableData,
           rawText: resumeText,
@@ -58,11 +95,23 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
 
       if (res.status === 200 || res.status === 201) {
         toast.success("Resume saved successfully!");
-        return true;
+        // Store resume ID in localStorage for use in interview creation
+        if (res.data?.resumeId) {
+          localStorage.setItem("resumeId", res.data.resumeId);
+          return true;
+        } else {
+          console.warn("Resume saved but resumeId not received in response", res.data);
+          toast.error("Resume saved but ID not received. Please try again.");
+          return false;
+        }
+      } else {
+        toast.error("Failed to save resume: Invalid response status");
+        return false;
       }
     } catch (error) {
-      console.error("Save failed", error);
-      toast.error("Failed to save resume");
+      console.error("Save failed:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Failed to save resume";
+      toast.error(errorMsg);
       return false;
     } finally {
       setLoading(false);
@@ -133,8 +182,57 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
 
   const handleStartInterview = async () => {
     if (await handleSave()) {
-      setShowInterviewModal(false);
-      navigate("/resume-interview/prepare");
+      // Get resumeId from localStorage (saved during handleSave)
+      const resumeId = localStorage.getItem("resumeId");
+      if (!resumeId) {
+        toast.error("Failed to retrieve resume ID");
+        return;
+      }
+
+      // Create interview in backend
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        
+        if (!token) {
+          toast.error("Authentication token not found. Please login again.");
+          return;
+        }
+
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/interview`,
+          {
+            resumeId,
+            preferences: {
+              interviewStyle: "standard",
+              difficulty: "medium",
+              duration: "30",
+              focusAreas: ["Technical Skills", "Problem Solving"],
+              interviewerPersonality: "friendly"
+            }
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (res.data?.interview?._id) {
+          setShowInterviewModal(false);
+          // Navigate to interview page with the created interview ID
+          navigate(`/resume-interview/${res.data.interview._id}`);
+        } else {
+          console.error("Interview response missing _id:", res.data);
+          toast.error("Failed to create interview: Invalid response");
+        }
+      } catch (error) {
+        console.error("Interview creation failed:", error);
+        const errorMsg = error.response?.data?.message || error.message || "Failed to create interview";
+        toast.error(errorMsg);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -146,7 +244,49 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
           <label className="text-sm text-gray-300 capitalize">
             {field.replace(/([A-Z])/g, " $1").trim()}
           </label>
-          {field === "summary" || field === "experience" ? (
+          {field === "skills" ? (
+            <div className="space-y-2">
+              {/* Skills Chips Display */}
+              <div className="flex flex-wrap gap-2 p-3 bg-[#2a1f3e] rounded-lg min-h-[44px]">
+                {Array.isArray(editableData.skills) && editableData.skills.length > 0 ? (
+                  editableData.skills.map((skill) => (
+                    <div
+                      key={skill}
+                      className="flex items-center gap-2 bg-[#9589e6] text-white px-3 py-1 rounded-full text-sm"
+                    >
+                      <span>{skill}</span>
+                      <button
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="hover:bg-[#7c6ed6] rounded-full p-0.5 transition-colors"
+                      >
+                        <MdClose size={16} />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-gray-500 text-sm">No skills added yet</span>
+                )}
+              </div>
+              {/* Skills Input */}
+              <div className="flex gap-2">
+                <input
+                  ref={skillsInputRef}
+                  type="text"
+                  placeholder="Add a skill (e.g., React, Node.js)"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyDown={handleAddSkill}
+                  className="flex-1 px-3 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6] placeholder-gray-500"
+                />
+                <button
+                  onClick={handleAddSkill}
+                  className="px-4 py-2 bg-[#9589e6] text-white rounded-lg hover:bg-[#7c6ed6] transition-colors font-medium"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          ) : field === "summary" || field === "experience" ? (
             <textarea
               name={field}
               value={editableData[field] || ""}
@@ -225,7 +365,8 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
                 "name",
                 "email",
                 "phone",
-                "location",
+                "skills",
+                "education",
                 "summary",
               ])}
             {activeSection === "experience" &&
@@ -325,14 +466,7 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
           onClick={() => setIsModalOpen(true)}
           className="bg-purple-900 text-white px-4 py-2 rounded hover:bg-purple-800"
         >
-          Preview & Save
-        </button>
-
-        <button
-          onClick={handleDownloadPDF}
-          className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-600"
-        >
-          Download PDF
+          Next
         </button>
       </div>
 

@@ -1,7 +1,7 @@
 const { calculateAnswerScore } = require('./localEvaluator');
-const { evaluateAnswer } = require('./geminiClient');
+const { evaluateAnswerWithFailover } = require('./aiProvider');
 
-// Cache for Gemini API responses
+// Cache for AI Provider responses
 const responseCache = new Map();
 
 // Generate cache key for storing API responses
@@ -15,37 +15,37 @@ async function evaluateAnswerHybrid(question, transcript, expectedKeywords, resu
         // Step 1: Immediate local evaluation
         const localEvaluation = calculateAnswerScore(transcript, expectedKeywords);
         
-        // Step 2: Determine if Gemini evaluation is needed
-        // We'll use Gemini for answers that:
+        // Step 2: Determine if AI evaluation is needed
+        // We'll use AI providers for answers that:
         // - Score very high or very low locally (to verify)
         // - Have medium scores (to get more nuanced feedback)
-        const needsGeminiEvaluation = 
+        const needsAIEvaluation = 
             localEvaluation.score < 40 || 
             localEvaluation.score > 80 || 
             (localEvaluation.score >= 40 && localEvaluation.score <= 60);
             
-        let geminiEvaluation = null;
+        let aiEvaluation = null;
         
-        if (needsGeminiEvaluation) {
+        if (needsAIEvaluation) {
             // Check cache first
             const cacheKey = generateCacheKey(question, transcript);
             
             if (responseCache.has(cacheKey)) {
-                geminiEvaluation = responseCache.get(cacheKey);
+                aiEvaluation = responseCache.get(cacheKey);
             } else {
-                // Get Gemini evaluation
-                geminiEvaluation = await evaluateAnswer(question, transcript, resumeContext);
+                // Get AI evaluation from failover chain (Groq/Pre-stored)
+                aiEvaluation = await evaluateAnswerWithFailover(question, transcript, resumeContext);
                 // Cache the response
-                responseCache.set(cacheKey, geminiEvaluation);
+                responseCache.set(cacheKey, aiEvaluation);
             }
         }
         
         // Step 3: Combine evaluations
-        return combineEvaluations(localEvaluation, geminiEvaluation);
+        return combineEvaluations(localEvaluation, aiEvaluation);
         
     } catch (error) {
         console.error('Error in hybrid evaluation:', error);
-        // Fallback to local evaluation if Gemini fails
+        // Fallback to local evaluation if AI fails
         return {
             ...localEvaluation,
             source: 'local_only',

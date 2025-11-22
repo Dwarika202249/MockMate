@@ -1,4 +1,4 @@
-const { generateQuestions, evaluateAnswer, generateSummary } = require('../utils/geminiClient');
+const { generateQuestionsWithFailover, evaluateAnswerWithFailover, generateSummaryWithFailover } = require('../utils/aiProvider');
 const { evaluateAnswerHybrid } = require('../utils/hybridEvaluator');
 const Interview = require('../models/InterviewSchema');
 
@@ -7,7 +7,7 @@ async function processQuestionGeneration(job) {
     const { resumeText, role, numQuestions } = job.data;
     
     try {
-        const questions = await generateQuestions(resumeText, role, numQuestions);
+        const questions = await generateQuestionsWithFailover(resumeText, role, numQuestions);
         
         // Update interview with generated questions
         if (job.data.interviewId) {
@@ -60,7 +60,7 @@ async function processInterviewSummary(job) {
             .populate('evaluations')
             .exec();
             
-        const summary = await generateSummary({
+        const summary = await generateSummaryWithFailover({
             questions: interview.questions,
             evaluations: interview.evaluations,
             duration: interview.duration,
