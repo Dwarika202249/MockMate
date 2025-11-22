@@ -1,16 +1,14 @@
 const Queue = require('bull');
 const Redis = require('ioredis');
 
-// Redis configuration
-const redisConfig = {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: process.env.REDIS_PORT || 6379,
+// Redis configuration - prioritize REDIS_URL for production compatibility
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+
+// Create Redis client using REDIS_URL
+const redisClient = new Redis(redisUrl, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false
-};
-
-// Create Redis client
-const redisClient = new Redis(redisConfig);
+});
 
 // Queue configurations
 const defaultJobOptions = {
@@ -23,18 +21,15 @@ const defaultJobOptions = {
     removeOnFail: 200      // Keep last 200 failed jobs
 };
 
-// Create queues
+// Create queues using REDIS_URL
 const queues = {
-    questionGeneration: new Queue('question-generation', { 
-        redis: redisConfig,
+    questionGeneration: new Queue('question-generation', redisUrl, {
         defaultJobOptions
     }),
-    answerEvaluation: new Queue('answer-evaluation', {
-        redis: redisConfig,
+    answerEvaluation: new Queue('answer-evaluation', redisUrl, {
         defaultJobOptions
     }),
-    interviewSummary: new Queue('interview-summary', {
-        redis: redisConfig,
+    interviewSummary: new Queue('interview-summary', redisUrl, {
         defaultJobOptions
     })
 };
