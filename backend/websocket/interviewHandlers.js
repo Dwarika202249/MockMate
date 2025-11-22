@@ -93,6 +93,7 @@ const interviewHandlers = {
                     
                     io.to(`interview-${interviewId}`).emit('QUESTIONS_READY', {
                         questions: finalQuestions,
+                        conversation: [],
                         currentQuestion: finalQuestions[0]
                     });
                     
@@ -107,12 +108,14 @@ const interviewHandlers = {
                 }
             } else {
                 console.log('\n📋 Using existing questions:', interview.questions?.length || 0);
+                console.log('📋 Conversation history:', interview.conversation?.length || 0, 'messages');
                 // Send existing questions if already generated
                 io.to(`interview-${interviewId}`).emit('QUESTIONS_READY', {
                     questions: interview.questions,
+                    conversation: interview.conversation || [],
                     currentQuestion: interview.questions[interview.currentQuestionIndex || 0]
                 });
-                console.log('✅ Existing questions emitted\n');
+                console.log('✅ Existing questions and conversation emitted\n');
             }
         } catch (error) {
             console.error('\n❌ Error in INITIALIZE_INTERVIEW:', error.message);
@@ -124,7 +127,10 @@ const interviewHandlers = {
     SUBMIT_ANSWER: async (io, socket, data) => {
         try {
             const { interviewId, answerId, answer, context } = data;
-            console.log('\n📝 SUBMIT_ANSWER received:', { interviewId, answerId, answerText: answer?.text });
+            console.log('\n╔════════════════════════════════════════════════════════╗');
+            console.log('║              SUBMIT_ANSWER HANDLER CALLED               ║');
+            console.log('╚════════════════════════════════════════════════════════╝');
+            console.log('📝 SUBMIT_ANSWER received:', { interviewId, answerId, answerText: answer?.text?.substring(0, 50), context });
 
             // Use lean() to fetch questions without re-casting issues
             const interviewForQuestions = await Interview.findById(interviewId).lean();
@@ -134,6 +140,13 @@ const interviewHandlers = {
                 socket.emit('ERROR', { message: 'Interview not found' });
                 return;
             }
+
+            // Respect saved resume progress - the frontend has already determined intro status
+            // If this is being called, assume the frontend has correctly assessed the state
+            console.log('📊 Interview session state:', {
+                userIntroductionProvided: interviewForQuestions.userIntroductionProvided,
+                currentQuestionIndex: interviewForQuestions.currentQuestionIndex
+            });
 
             console.log('📋 Interview loaded, checking questions:', { 
                 hasQuestions: !!interviewForQuestions.questions,
@@ -176,13 +189,20 @@ const interviewHandlers = {
 
             // Evaluate answer using AI failover (async but emit immediately)
             try {
+                console.log('📤 About to call evaluateAnswerWithFailover with question:', { id: currentQuestion.id, text: currentQuestion.text?.substring(0, 50) });
                 const evaluation = await evaluateAnswerWithFailover(
                     currentQuestion,
                     answerText,
                     interviewForQuestions.preferences
                 );
 
-                console.log('✅ Evaluation complete:', { score: evaluation.score, label: evaluation.label });
+                console.log('✅ Evaluation complete:', { score: evaluation?.score, label: evaluation?.label });
+                
+                if (!evaluation) {
+                    console.error('❌ Evaluation returned null/undefined');
+                    socket.emit('ERROR', { message: 'Evaluation failed' });
+                    return;
+                }
 
                 // Create answer object
                 const newAnswer = {
@@ -276,7 +296,7 @@ const interviewHandlers = {
                         questionId: currentQuestion.id
                     });
 
-                    console.log('📤 ANSWER_EVALUATED emitted');
+                    console.log('📤 ANSWER_EVALUATED emitted to room: interview-' + interviewId);
 
                     const nextQuestion = interviewForQuestions.questions[questionIndex + 1];
                     console.log('➡️ Moving to next question:', { index: questionIndex + 1, id: nextQuestion?.id });
@@ -284,11 +304,13 @@ const interviewHandlers = {
                     io.to(`interview-${interviewId}`).emit('NEXT_QUESTION', {
                         question: nextQuestion
                     });
-                    console.log('📤 NEXT_QUESTION emitted');
+                    console.log('📤 NEXT_QUESTION emitted to room: interview-' + interviewId);
                 }
             } catch (error) {
-                console.error('❌ Error evaluating answer:', error.message);
-                console.error('❌ Stack:', error.stack);
+                console.error('\n❌ ERROR IN ANSWER EVALUATION:');
+                console.error('   Message:', error.message);
+                console.error('   Stack:', error.stack);
+                console.log('📤 Emitting ERROR event to frontend');
                 socket.emit('ERROR', { 
                     message: 'Failed to evaluate answer: ' + error.message
                 });

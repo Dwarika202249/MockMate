@@ -64,6 +64,22 @@ const interviewSchema = new mongoose.Schema({
             keywords: [String]
         }
     }],
+    conversation: [{
+        id: String,
+        sender: String,  // 'ai' or 'user'
+        text: String,
+        timestamp: Date,
+        questionId: String,  // Reference to which question this is about
+        messageType: String  // 'question', 'answer', 'feedback', 'intro', 'outro'
+    }],
+    currentQuestionIndex: {
+        type: Number,
+        default: 0
+    },
+    userIntroductionProvided: {
+        type: Boolean,
+        default: false
+    },
     introMessage: {
         text: String,
         delivered: { type: Boolean, default: false },

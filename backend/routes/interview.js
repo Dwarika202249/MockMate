@@ -16,7 +16,10 @@ router.get("/history", userAuth, interviewController.getInterviewHistory);
 // Submit interview answers (POST /api/interview/submit)
 router.post("/submit", userAuth, interviewController.submitInterview);
 
-// Get interview by ID (GET /api/interview/:id) - MUST be after /history
+// Save conversation message (POST /api/interview/:id/message)
+router.post("/:id/message", userAuth, interviewController.saveMessage);
+
+// Get interview by ID (GET /api/interview/:id) - MUST be after specific routes
 router.get("/:id", userAuth, interviewController.getInterview);
 
 // Update interview preferences (PUT /api/interview/:id/preferences)

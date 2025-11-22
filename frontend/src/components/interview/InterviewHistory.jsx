@@ -11,7 +11,6 @@ import {
   FiList,
 } from "react-icons/fi";
 import DeleteModal from "../common/DeleteModal";
-import Loader from "../common/Loader";
 import Pagination from "../shared/Pagination";
 import toast from "react-hot-toast";
 
@@ -196,7 +195,7 @@ const InterviewHistory = () => {
             metrics here.
           </p>
           <button
-            onClick={() => navigate("/resume")}
+            onClick={() => navigate("/dashboard/resume")}
             className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
           >
             Start Interview
@@ -270,13 +269,23 @@ const InterviewHistory = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 sm:gap-3">
-                  <button
-                    onClick={() => navigate(`/feedback/${interview._id}`)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold text-xs sm:text-sm hover:shadow-lg transition-all duration-300 group/btn"
-                  >
-                    <FiEye size={16} className="hidden sm:inline" />
-                    <span>Details</span>
-                  </button>
+                  {interview.status !== 'completed' && interview.status !== 'cancelled' && interview.status !== 'deleted' ? (
+                    <button
+                      onClick={() => navigate(`/resume-interview/${interview._id}`)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-yellow-600 to-amber-600 text-white rounded-lg font-semibold text-xs sm:text-sm hover:shadow-lg transition-all duration-300 group/btn"
+                    >
+                      <FiClock size={16} className="hidden sm:inline" />
+                      <span>Resume</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => navigate(`/feedback/${interview._id}`)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold text-xs sm:text-sm hover:shadow-lg transition-all duration-300 group/btn"
+                    >
+                      <FiEye size={16} className="hidden sm:inline" />
+                      <span>Details</span>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => handleDelete(interview._id)}

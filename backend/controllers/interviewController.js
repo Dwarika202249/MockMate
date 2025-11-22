@@ -98,11 +98,22 @@ exports.updateInterviewPreferences = async (req, res) => {
       return res.status(400).json({ message: 'Invalid interview ID format' });
     }
 
-    // Extract status if present
-    const { status, ...incomingData } = req.body;
+    // Extract status and top-level fields if present
+    const { status, userIntroductionProvided, currentQuestionIndex, ...incomingData } = req.body;
 
     // Build the update object
     const updateObj = {};
+
+    // Add top-level persistence fields
+    if (userIntroductionProvided !== undefined) {
+      updateObj.userIntroductionProvided = userIntroductionProvided;
+      console.log('✅ Will update userIntroductionProvided to:', userIntroductionProvided);
+    }
+
+    if (currentQuestionIndex !== undefined) {
+      updateObj.currentQuestionIndex = currentQuestionIndex;
+      console.log('✅ Will update currentQuestionIndex to:', currentQuestionIndex);
+    }
 
     // Build the preferences update object, filtering out any non-preference fields
     const preferenceFields = [
@@ -253,6 +264,61 @@ exports.deleteInterview = async (req, res) => {
   } catch (error) {
     console.error('Error deleting interview:', error);
     res.status(500).json({ message: 'Failed to delete interview' });
+  }
+};
+
+// Save conversation message (for session persistence)
+exports.saveMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sender, text, timestamp } = req.body;
+    const userId = req.user.id;
+
+    // Validate input
+    if (!sender || !text) {
+      return res.status(400).json({ message: 'Missing sender or text' });
+    }
+
+    if (!['ai', 'user'].includes(sender)) {
+      return res.status(400).json({ message: 'Invalid sender type' });
+    }
+
+    // Find interview and verify ownership
+    const interview = await Interview.findById(id);
+    if (!interview) {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+
+    if (interview.user.toString() !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    // Create message object
+    const message = {
+      id: `msg-${Date.now()}-${Math.random()}`,
+      sender,
+      text,
+      timestamp: timestamp ? new Date(timestamp) : new Date(),
+      messageType: sender === 'ai' ? 'message' : 'answer'
+    };
+
+    // Add message to conversation array
+    if (!interview.conversation) {
+      interview.conversation = [];
+    }
+    
+    interview.conversation.push(message);
+
+    // Save interview
+    await interview.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Message saved'
+    });
+  } catch (error) {
+    console.error('Error saving message:', error);
+    res.status(500).json({ message: 'Failed to save message' });
   }
 };
 
