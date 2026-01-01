@@ -220,7 +220,14 @@ const InterviewHistory = () => {
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base sm:text-lg font-bold text-gray-800 capitalize flex items-center gap-2 mb-2 truncate">
                       <FiBriefcase size={18} className="text-purple-600 flex-shrink-0" />
-                      <span className="truncate">{interview.resume?.jobRole || "Interview"}</span>
+                      <span className="truncate">
+                        {interview.type === 'free' 
+                          ? "Free Interview" 
+                          : interview.resume?.jobRole 
+                            ? `${interview.resume.jobRole}` 
+                            : "Resume-based Interview"
+                        }
+                      </span>
                     </h3>
                     {getStatusBadge(interview.status)}
                   </div>
@@ -257,9 +264,15 @@ const InterviewHistory = () => {
                   )}
 
                   {/* Score Display */}
-                  {interview.summary?.overallScore && (
+                  {interview.status === 'completed' && (interview.summary?.overallScore || interview.summary?.averageScore) ? (
                     <div className="mt-3 sm:mt-4">
-                      {getScoreBadge(interview.summary.overallScore)}
+                      {getScoreBadge(interview.summary.overallScore || interview.summary.averageScore)}
+                    </div>
+                  ) : (
+                    <div className="mt-3 sm:mt-4">
+                      <div className="px-4 py-2 rounded-lg border bg-gradient-to-br from-gray-50 to-slate-50 border-gray-200 text-center">
+                        <div className="text-xs font-semibold text-gray-600">Complete interview to see score</div>
+                      </div>
                     </div>
                   )}
                 </div>

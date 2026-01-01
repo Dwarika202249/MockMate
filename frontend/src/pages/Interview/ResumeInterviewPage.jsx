@@ -99,13 +99,6 @@ const ResumeInterviewPage = () => {
         // Handle both response formats: { interview } and direct interview object
         const interview = response.interview || response;
         
-        console.log('📥 Interview data fetched:', {
-          status: interview.status,
-          currentQuestionIndex: interview.currentQuestionIndex,
-          userIntroductionProvided: interview.userIntroductionProvided,
-          hasQuestions: interview.questions?.length > 0
-        });
-        
         // Get the last question index for resumption
         const lastIndex = interview.currentQuestionIndex || 0;
         setCurrentIndex(lastIndex);
@@ -136,11 +129,9 @@ const ResumeInterviewPage = () => {
         setInterviewData(interview.preferences || null);
         
         if (interview.status === 'in-progress') {
-          console.log('🔄 Interview status: in-progress, showing preparation screen');
           setShowOnboarding(false);
           setShowPreparation(true);
         } else if (interview.status === 'active') {
-          console.log('🎯 Interview status: active, resuming interview');
           setShowOnboarding(false);
           setShowPreparation(false);
           setRunning(true);
@@ -148,13 +139,11 @@ const ResumeInterviewPage = () => {
           
           // For active interviews, will emit INITIALIZE_INTERVIEW via useEffect when socket connects
         } else {
-          console.log('🚀 Interview status:', interview.status, '- showing onboarding');
           setShowOnboarding(true);
         }
 
         if (interview.questions?.length > 0) {
           setQuestions(interview.questions);
-          console.log('✅ Questions loaded:', interview.questions.length);
         }
       } catch (error) {
         console.error('Error fetching interview:', error);
@@ -169,7 +158,6 @@ const ResumeInterviewPage = () => {
   // Initialize WebSocket for active interviews on mount or when socket connects
   useEffect(() => {
     if (interviewState === INTERVIEW_STATES.RUNNING && isConnected && socket) {
-      console.log('🔌 Emitting INITIALIZE_INTERVIEW for resumed active interview');
       emit('INITIALIZE_INTERVIEW', {
         interviewId,
         userId: socket.id,
@@ -182,8 +170,6 @@ const ResumeInterviewPage = () => {
   const handleOnboardingComplete = async (data) => {
     try {
       setIsProcessing(true);
-      console.log('handleOnboardingComplete called, isConnected:', isConnected);
-      console.log('Onboarding data:', data);
       
       // Close the onboarding modal
       setShowOnboarding(false);
@@ -193,7 +179,6 @@ const ResumeInterviewPage = () => {
         ...data.preferences,
         status: 'in-progress'
       });
-      console.log('Update preferences response:', updateRes);
 
       setInterviewData(data);
       setInterviewState(INTERVIEW_STATES.PREPARING);
@@ -201,13 +186,11 @@ const ResumeInterviewPage = () => {
 
       // Wait for WebSocket connection if not connected yet
       if (!isConnected) {
-        console.log('WebSocket not connected yet, waiting...');
         // Give socket time to connect
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       // Request question generation through WebSocket
-      console.log('Emitting INITIALIZE_INTERVIEW with interviewId:', interviewId);
       emit('INITIALIZE_INTERVIEW', {
         interviewId,
         userId: socket?.id, // Include socket ID for backend reference
@@ -220,7 +203,6 @@ const ResumeInterviewPage = () => {
           experience: data.experience
         }
       });
-      console.log('INITIALIZE_INTERVIEW emitted');
     } catch (error) {
       console.error('Error starting interview:', error);
       setError('Failed to start interview');
@@ -231,45 +213,34 @@ const ResumeInterviewPage = () => {
 
   const handlePreparationComplete = async () => {
     try {
-      console.log('🎬 handlePreparationComplete called');
-      console.log('📊 Current state:', { interviewId, interviewData, questionsCount: questions.length });
-
       // Update interview status to active
-      console.log('📝 Updating interview status to active...');
       const updateRes = await InterviewService.updateInterviewPreferences(interviewId, {
         status: 'active'
       });
-      console.log('✅ Interview status updated:', updateRes);
 
       // Set state transitions
       setInterviewState(INTERVIEW_STATES.RUNNING);
       setRunning(true);
       setShowPreparation(false);  // Hide preparation screen
-      console.log('✅ State transitions complete');
       
       // CRITICAL: Check if user already provided introduction (session resume case)
       if (userIntroductionProvided) {
-        console.log('📝 User introduction already provided, resuming to question', currentIndexRef.current);
         askQuestion(currentIndexRef.current);
         return;
       }
       
       // Start with AI introduction only if this is a fresh interview
       const introMessage = generateAIIntroduction(interviewData);
-      console.log('🎤 Generated intro message');
       pushAIMessage(introMessage);
       
       speakAI(introMessage, () => {
-        console.log('🎤 Interviewer intro TTS finished');
         setAiSpeaking(false);
         
         // Now ask the user to introduce themselves
         const userIntroPrompt = "Thank you! Now, could you please tell me about yourself? Include your background, key skills, and why you're interested in this position.";
-        console.log('🎤 Asking for user introduction');
         pushAIMessage(userIntroPrompt);
         
         speakAI(userIntroPrompt, () => {
-          console.log('🎤 User intro prompt TTS finished, starting to listen');
           // Start listening for user's self-introduction
           startListening();
           setIsProcessing(false);
@@ -286,23 +257,15 @@ const ResumeInterviewPage = () => {
   // WebSocket event subscriptions
   useEffect(() => {
     if (!socket) {
-      console.log('Socket not ready, skipping subscriptions');
       return;
     }
 
-    console.log('Setting up WebSocket subscriptions');
-
     const unsubQuestions = subscribe('QUESTIONS_READY', (data) => {
-      console.log('QUESTIONS_READY received:', data);
       setQuestions(data.questions);
       setIsProcessing(false);
     });
 
     const unsubFeedback = subscribe('ANSWER_EVALUATED', (data) => {
-      console.log('\n╔════════════════════════════════════════════════════════╗');
-      console.log('║          ANSWER_EVALUATED EVENT RECEIVED               ║');
-      console.log('╚════════════════════════════════════════════════════════╝');
-      console.log('📊 ANSWER_EVALUATED received:', data);
       const { questionId, evaluation } = data;
       // Map evaluation back to the most recent answer for that question
       setAnswers(prev => {
@@ -320,16 +283,11 @@ const ResumeInterviewPage = () => {
       // Push AI feedback into chat panel
       if (evaluation) {
         const feedbackText = evaluation.feedback || evaluation.label || 'Feedback received.';
-        console.log('📝 Pushing feedback to chat:', feedbackText);
         setMessages((m) => [...m, { id: `ai-feedback-${Date.now()}`, sender: 'ai', text: feedbackText }]);
       }
     });
 
     const unsubNextQuestion = subscribe('NEXT_QUESTION', (data) => {
-      console.log('\n╔════════════════════════════════════════════════════════╗');
-      console.log('║             NEXT_QUESTION EVENT RECEIVED               ║');
-      console.log('╚════════════════════════════════════════════════════════╝');
-      console.log('📋 NEXT_QUESTION received:', data);
       const { question } = data;
       
       // Use the question object from the event (backend is already sending it)
@@ -339,11 +297,8 @@ const ResumeInterviewPage = () => {
         setCurrentIndex(nextIndex);
         currentIndexRef.current = nextIndex; // Update ref immediately
         
-        console.log('📋 Moving to next question at index:', nextIndex, 'Question ID:', question?.id);
-        
         pushAIMessage(question.text);
         speakAI(question.text, () => {
-          console.log('🎤 Question TTS finished, starting to listen');
           startListening();
         });
       } else {
@@ -352,7 +307,6 @@ const ResumeInterviewPage = () => {
     });
 
     const unsubInterviewCompleted = subscribe('INTERVIEW_COMPLETED', (data) => {
-      console.log('INTERVIEW_COMPLETED received:', data);
       const { summary, outroMessage } = data || {};
       
       setIsProcessing(false);
@@ -371,7 +325,6 @@ const ResumeInterviewPage = () => {
       
       // Speak the outro message
       speakAI(outro, () => {
-        console.log('🎤 Outro TTS finished, navigating to feedback');
         // Navigate after outro is finished speaking
         setTimeout(() => {
           navigate(`/feedback/${interviewId || 'latest'}`);
@@ -386,7 +339,6 @@ const ResumeInterviewPage = () => {
     });
 
     return () => {
-      console.log('Cleaning up WebSocket subscriptions');
       unsubQuestions();
       unsubFeedback();
       unsubNextQuestion();
@@ -398,7 +350,6 @@ const ResumeInterviewPage = () => {
   // WebSocket Reconnection Resilience: Re-initialize session if connection recovers
   useEffect(() => {
     if (isConnected && interviewData && interviewState === INTERVIEW_STATES.RUNNING) {
-      console.log('🔌 WS reconnected. Re-initializing session...');
       // Re-emit INITIALIZE_INTERVIEW to re-join the room and get status check
       emit('INITIALIZE_INTERVIEW', {
         interviewId,
@@ -412,17 +363,11 @@ const ResumeInterviewPage = () => {
   // Handle resume of active interview (when page refreshes during active session)
   useEffect(() => {
     if (running && userIntroductionProvided && questions.length > 0 && messages.length === 0) {
-      console.log('🎯 Resuming active interview with intro already provided');
-      console.log('📋 Current question index:', currentIndexRef.current);
-      console.log('📋 Total questions:', questions.length);
-      
       // If we have a current question to ask, ask it
       if (currentIndexRef.current < questions.length) {
         const currentQuestion = questions[currentIndexRef.current];
-        console.log('📝 Asking question at index:', currentIndexRef.current);
         pushAIMessage(currentQuestion.text);
         speakAI(currentQuestion.text, () => {
-          console.log('🎤 Question TTS finished, starting to listen');
           startListening();
         });
       } else {
@@ -454,13 +399,11 @@ const ResumeInterviewPage = () => {
   const pushAIMessage = (text) => {
     messageCounterRef.current += 1;
     const uniqueId = `ai-${Date.now()}-${Math.random()}-${messageCounterRef.current}`;
-    console.log('📌 Pushing AI message with ID:', uniqueId);
     setMessages((m) => [...m, { id: uniqueId, sender: "ai", text }]);
   };
   const pushUserMessage = (text) => {
     messageCounterRef.current += 1;
     const uniqueId = `user-${Date.now()}-${Math.random()}-${messageCounterRef.current}`;
-    console.log('📌 Pushing user message with ID:', uniqueId);
     setMessages((m) => [...m, { id: uniqueId, sender: "user", text }]);
   };
 
@@ -500,34 +443,28 @@ const ResumeInterviewPage = () => {
   };
 
   const askQuestion = (index) => {
-    console.log('❓ askQuestion called with index:', index);
     const q = questions[index];
     if (!q) {
       console.error('❌ Question not found at index:', index);
       return;
     }
-    console.log('📋 Setting currentIndex to:', index);
     setCurrentIndex(index); // Update state for UI
     currentIndexRef.current = index; // Update ref for reliable access in event handlers
     pushAIMessage(q.text);
     speakAI(q.text, () => {
-      console.log('🎤 Question TTS finished, starting to listen');
       startListening();
     });
   };
 
   const handleUserFinishAnswer = () => {
-    console.log('🎬 handleUserFinishAnswer called');
     stopListening();
     resetTranscript(); // CRITICAL: Reset transcript after capturing
     const finalText = transcript || "";
-    console.log('📝 Final answer text:', finalText);
     finalizeLiveUserBubble(finalText);
 
     if (finalText.trim()) {
       // Check if this is the user's self-introduction (first answer)
       if (!userIntroductionProvided) {
-        console.log('📝 User self-introduction received:', finalText);
         // Store user introduction
         setUserIntroductionProvided(true);
         
@@ -536,21 +473,17 @@ const ResumeInterviewPage = () => {
         pushAIMessage(acknowledgment);
         
         speakAI(acknowledgment, async () => {
-          console.log('🎤 Acknowledgment TTS finished, asking first question');
-          
           // CRITICAL: Save intro status to backend to survive refresh
           try {
             await InterviewService.updateInterviewPreferences(interviewId, {
               userIntroductionProvided: true
             });
-            console.log('✅ Introduction status saved to backend');
           } catch (error) {
             console.error('❌ Failed to save introduction status:', error);
           }
           
           // Now ask the first actual question
           if (questions.length > 0) {
-            console.log('✅ Asking question 0 of', questions.length);
             askQuestion(0);
           } else {
             console.warn('⚠️ No questions available');
@@ -559,10 +492,6 @@ const ResumeInterviewPage = () => {
         });
       } else {
         // This is a regular question answer
-        console.log('\n╔════════════════════════════════════════════════════════╗');
-        console.log('║             SUBMITTING REGULAR ANSWER                 ║');
-        console.log('╚════════════════════════════════════════════════════════╝');
-        console.log('🔴 Submitting regular answer for question at index:', currentIndexRef.current);
         const answerId = `answer-${Date.now()}-${Math.random()}`;
         const currentAnswer = {
           id: answerId,
@@ -570,8 +499,6 @@ const ResumeInterviewPage = () => {
           question: questions[currentIndexRef.current],
           timestamp: new Date().toISOString()
         };
-
-        console.log('📤 About to emit SUBMIT_ANSWER with:', { questionId: questions[currentIndexRef.current]?.id, answerId, answerText: finalText.substring(0, 50) });
 
         // Send answer to server for evaluation; server will respond with ANSWER_EVALUATED and NEXT_QUESTION
         emit('SUBMIT_ANSWER', {
@@ -584,8 +511,6 @@ const ResumeInterviewPage = () => {
             totalQuestions: questions.length
           }
         });
-
-        console.log('✅ SUBMIT_ANSWER emitted to backend');
 
         setIsProcessing(true);
 

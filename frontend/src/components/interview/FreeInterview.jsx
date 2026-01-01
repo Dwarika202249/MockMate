@@ -84,11 +84,12 @@ const FreeInterview = ({ onClose }) => {
             type="number"
             value={numQuestions}
             onChange={(e) => setNumQuestions(Number(e.target.value))}
-            min={1}
-            max={20}
+            min={3}
+            max={10}
             className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
             required
           />
+          <p className="text-xs text-gray-600 mt-1">Choose between 3 to 10 questions</p>
         </div>
         <div className="mb-4">
           <label className="block font-semibold text-indigo-700">Difficulty Level:</label>
