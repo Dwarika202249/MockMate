@@ -4,42 +4,103 @@ const FeedbackSummary = require('../models/FeedbackSchema');
 const { generateQuestionsWithFailover, evaluateAnswerWithFailover, generateSummaryWithFailover } = require('../utils/aiProvider');
 const { queues } = require('../config/queue');
 
-// Start a new interview session
+// Start a new interview session (supports resume-based and free interviews)
 exports.startInterview = async (req, res) => {
   try {
-    const { resumeId, preferences } = req.body;
+    const { resumeId, preferences, type, details, numQuestions, difficulty } = req.body;
+
+    // Ensure authenticated user
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     const userId = req.user.id;
 
-    const resume = await Resume.findById(resumeId);
-    if (!resume) {
-      return res.status(404).json({ message: 'Resume not found' });
+    // Resume-based interview (existing flow)
+    if (resumeId) {
+      const resume = await Resume.findById(resumeId);
+      if (!resume) {
+        return res.status(404).json({ message: 'Resume not found' });
+      }
+
+      const interview = new Interview({
+        user: userId,
+        resume: resumeId,
+        preferences: preferences || {},
+        status: 'created',
+        startTime: new Date()
+      });
+
+      await interview.save();
+
+      // Queue question generation job
+      await queues.questionGeneration.add({
+        interviewId: interview._id,
+        resumeText: resume.summary,
+        role: resume.jobRole,
+        numQuestions: 5
+      });
+
+      return res.status(201).json({
+        status: 'success',
+        interviewId: interview._id,
+        interview
+      });
     }
+
+    // Free interview flow (no resumeId)
+    if (!details && !type) {
+      return res.status(400).json({ message: 'Missing interview details or type for free interview' });
+    }
+
+    // Map difficulty values to schema enums: basic->easy, intermediate->medium, advanced->hard
+    const difficultyMap = (d) => {
+      if (!d) return 'easy';
+      const dd = d.toString().toLowerCase();
+      if (dd === 'basic') return 'easy';
+      if (dd === 'intermediate') return 'medium';
+      if (dd === 'advanced') return 'hard';
+      if (['easy','medium','hard'].includes(dd)) return dd;
+      return 'easy';
+    };
+
+    const mappedDifficulty = difficultyMap(difficulty || preferences?.difficulty);
 
     const interview = new Interview({
       user: userId,
-      resume: resumeId,
-      preferences: preferences || {},
-      status: 'initialized',
+      // Do not set `resume` for free interviews
+      type: 'free',
+      details: details || type || '',
+      preferences: {
+        ...(preferences || {}),
+        difficulty: mappedDifficulty,
+        numQuestions: numQuestions || 5,
+        interviewStyle: preferences?.interviewStyle || 'standard' // keep an allowed enum value
+      },
+      status: 'created',
       startTime: new Date()
     });
 
     await interview.save();
 
-    // Queue question generation job
+    // Queue question generation job using provided details as context
     await queues.questionGeneration.add({
       interviewId: interview._id,
-      resumeText: resume.summary,
-      role: resume.jobRole,
-      numQuestions: 5
+      resumeText: details || type || '',
+      role: type || details || 'General',
+      numQuestions: numQuestions || 5
     });
 
     res.status(201).json({
       status: 'success',
+      interviewId: interview._id,
       interview
     });
   } catch (error) {
-    console.error('Error starting interview:', error);
-    res.status(500).json({ message: 'Failed to start interview' });
+    console.error('Error starting interview:', error.message, error.stack || error);
+    const response = { message: 'Failed to start interview' };
+    if (process.env.NODE_ENV !== 'production') response.error = error.message;
+    res.status(500).json(response);
   }
 };
 
@@ -172,9 +233,90 @@ exports.updateInterviewPreferences = async (req, res) => {
   }
 };
 
-// Submit interview (deprecated; use websocket instead)
+// Submit interview (supports quick free interview submissions)
 exports.submitInterview = async (req, res) => {
-  res.json({ message: 'Use WebSocket for real-time interview' });
+  try {
+    const { interviewId, answers } = req.body;
+    const userId = req.user.id;
+
+    if (!interviewId) {
+      return res.status(400).json({ message: 'Missing interviewId' });
+    }
+
+    const interview = await Interview.findById(interviewId);
+    if (!interview) {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+
+    if (interview.user.toString() !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    // If no questions were generated, return an error
+    if (!Array.isArray(interview.questions) || interview.questions.length === 0) {
+      return res.status(400).json({ message: 'No questions available for this interview yet' });
+    }
+
+    // Local quick evaluation for each answer
+    const perQuestionFeedback = [];
+    let totalScore = 0;
+
+    // Lazy import to avoid circulars during startup
+    const { calculateAnswerScore } = require('../utils/localEvaluator');
+
+    interview.questions.forEach((q, idx) => {
+      const ans = (answers && answers[idx]) || answers?.[idx]?.trim() || '';
+      const expectedKeywords = q.expectedKeywords || [];
+      const evalRes = calculateAnswerScore(ans, expectedKeywords);
+
+      perQuestionFeedback.push({
+        questionId: q.id || `q-${idx}`,
+        question: q.text,
+        answer: ans,
+        score: evalRes.score,
+        feedback: evalRes.feedback,
+        metrics: evalRes.metrics
+      });
+
+      totalScore += evalRes.score;
+    });
+
+    const averageScore = Math.round(totalScore / interview.questions.length);
+
+    // Save quick feedback document
+    const feedbackDoc = new FeedbackSummary({
+      interviewId: interview._id,
+      questions: interview.questions.map((q) => q.text || ''),
+      answers: interview.questions.map((q, i) => (answers && answers[i]) || ''),
+      feedback: `Quick score: ${averageScore}. Basic feedback generated.`,
+      user: userId
+    });
+
+    await feedbackDoc.save();
+
+    // Update interview status and summary
+    interview.status = 'completed';
+    interview.endTime = new Date();
+    interview.summary = {
+      type: 'quick',
+      averageScore,
+      perQuestionFeedback
+    };
+
+    await interview.save();
+
+    res.json({
+      status: 'success',
+      feedback: {
+        averageScore,
+        perQuestionFeedback
+      },
+      feedbackId: feedbackDoc._id
+    });
+  } catch (error) {
+    console.error('Error submitting interview:', error);
+    res.status(500).json({ message: 'Failed to submit interview' });
+  }
 };
 
 // Get interview history with pagination

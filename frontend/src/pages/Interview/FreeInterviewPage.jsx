@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import Navbar from "../../components/common/Navbar";
 import Loader from "../../components/common/Loader";
@@ -10,6 +10,7 @@ import QuestionDisplay from "../../components/interview/QuestionDisplay";
 import RecordingControls from "../../components/interview/RecordingControls";
 import NavigationButtons from "../../components/shared/NavigationButtons";
 import VideoRecorder from "../../components/interview/VideoRecorder";
+import { useWebSocket } from "../../hooks/useWebSocket";
 
 const FreeInterviewPage = () => {
   const { interviewId } = useParams();
@@ -20,6 +21,13 @@ const FreeInterviewPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [interviewMeta, setInterviewMeta] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [pollingAttempts, setPollingAttempts] = useState(0);
+  const [isPendingQuestions, setIsPendingQuestions] = useState(false);
+  const MAX_POLL_ATTEMPTS = 12; // ~1 minute if interval is 5s
+
+  const navigate = useNavigate();
 
   const {
     transcript,
@@ -28,9 +36,13 @@ const FreeInterviewPage = () => {
     browserSupportsSpeechRecognition,
   } = useSpeechRecognition();
 
+  // WebSocket helpers (used for real-time QUESTIONS_READY notification)
+  const { socket, isConnected, emit, subscribe } = useWebSocket();
+
   useEffect(() => {
     const fetchInterview = async () => {
       try {
+        setLoading(true);
         const response = await axios.get(
           `${import.meta.env.VITE_BASE_URL}/api/interview/${interviewId}`,
           {
@@ -39,19 +51,106 @@ const FreeInterviewPage = () => {
             },
           }
         );
-        setQuestions(response.data.questions);
+
+        const interviewData = response.data.interview || response.data;
+
+        const fetchedQuestions = interviewData.questions || [];
+        setQuestions(fetchedQuestions);
         setInterviewMeta({
-          type: response.data.type,
-          details: response.data.details,
-          difficulty: response.data.difficulty,
+          type: interviewData.type || interviewData?.preferences?.interviewStyle || 'free',
+          details: interviewData.details || '',
+          difficulty: interviewData?.preferences?.difficulty || 'basic',
         });
+
+        // If questions are not yet generated, enable pending state to start polling
+        if (!fetchedQuestions.length) {
+          setIsPendingQuestions(true);
+          // Ensure we are subscribed and request socket initialization so the backend can join the room and emit QUESTIONS_READY
+          try {
+            emit && emit('INITIALIZE_INTERVIEW', { interviewId });
+            console.log('Emitted INITIALIZE_INTERVIEW for interviewId:', interviewId);
+          } catch (e) {
+            console.warn('Failed to emit INITIALIZE_INTERVIEW:', e.message || e);
+          }
+        } else {
+          setIsPendingQuestions(false);
+        }
       } catch (error) {
         console.error("Error fetching interview data:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchInterview();
-  }, [interviewId]);
+
+    // (Polling handled in separate effect)
+    return () => {};
+  }, [interviewId, emit]);
+
+  // Polling effect: triggers when questions are pending
+  useEffect(() => {
+    if (!isPendingQuestions) return;
+
+    setPollingAttempts(0);
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      setPollingAttempts(attempts);
+
+      try {
+        const r = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/api/interview/${interviewId}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
+        const updated = r.data.interview || r.data;
+        if (updated.questions && updated.questions.length > 0) {
+          setQuestions(updated.questions);
+          setIsPendingQuestions(false);
+          clearInterval(interval);
+        }
+      } catch (err) {
+        console.error('Polling fetch failed:', err.message || err);
+      }
+
+      if (attempts >= MAX_POLL_ATTEMPTS) {
+        setIsPendingQuestions(false);
+        clearInterval(interval);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isPendingQuestions, interviewId]);
+
+  // Socket subscription: if questions are pending, subscribe to QUESTIONS_READY
+  // (useWebSocket is declared above to avoid duplicate declarations)
+
+  useEffect(() => {
+    if (!isPendingQuestions) return;
+
+    let unsub = null;
+    try {
+      unsub = subscribe('QUESTIONS_READY', (payload) => {
+        // Payload may include interviewId or _id; if not present, accept the payload globally
+        if (!payload) return;
+        const hasQuestions = payload.questions && payload.questions.length > 0;
+        const idMatch = payload.interviewId === interviewId || payload._id === interviewId || payload.id === interviewId;
+        if (hasQuestions && (!payload.interviewId && !payload._id && !payload.id)) {
+          setQuestions(payload.questions);
+          setIsPendingQuestions(false);
+        } else if (hasQuestions && idMatch) {
+          setQuestions(payload.questions);
+          setIsPendingQuestions(false);
+        }
+      });
+    } catch (err) {
+      console.error('Socket subscribe failed:', err);
+    }
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [isPendingQuestions, interviewId, subscribe]);
 
   useEffect(() => {
     setAnswers((prevAnswers) => ({
@@ -59,6 +158,52 @@ const FreeInterviewPage = () => {
       [currentQuestionIndex]: transcript,
     }));
   }, [transcript, currentQuestionIndex]);
+
+  // Timer: set timeLeft based on difficulty when question changes
+  const getTimeForDifficulty = (difficulty) => {
+    switch ((difficulty || 'basic').toLowerCase()) {
+      case 'basic':
+        return 45;
+      case 'intermediate':
+        return 60;
+      case 'advanced':
+        return 90;
+      default:
+        return 45;
+    }
+  };
+
+  useEffect(() => {
+    // Reset timer when question changes
+    if (questions && questions.length > 0) {
+      setTimeLeft(getTimeForDifficulty(interviewMeta.difficulty));
+    }
+  }, [currentQuestionIndex, questions, interviewMeta.difficulty]);
+
+  // Countdown
+  useEffect(() => {
+    if (timeLeft === 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          // Auto-advance when time runs out
+          if (currentQuestionIndex < questions.length - 1) {
+            setCurrentQuestionIndex((i) => i + 1);
+            resetTranscript();
+            return 0;
+          } else {
+            // Last question timed out -> submit automatically
+            handleSubmitAnswers();
+            return 0;
+          }
+        }
+        return t - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, currentQuestionIndex, questions.length]);
 
   const handleAnswerChange = (event) => {
     setAnswers({
@@ -77,7 +222,7 @@ const FreeInterviewPage = () => {
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex((i) => i + 1);
       resetTranscript();
     }
   };
@@ -90,15 +235,14 @@ const FreeInterviewPage = () => {
         {
           interviewId,
           answers,
-          type: interviewMeta.type,
-          details: interviewMeta.details,
-          difficulty: interviewMeta.difficulty,
         },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      setFeedback(response.data.feedback);
+
+      // Redirect to feedback page with interviewId so user sees full feedback
+      navigate(`/feedback/${interviewId}`);
     } catch (error) {
       console.error("Error submitting answers:", error);
     } finally {
@@ -132,10 +276,43 @@ const FreeInterviewPage = () => {
     return <Loader />;
   }
 
-  if (!questions.length) {
+  if (loading) {
+    return <Loader />;
+  }
+
+  if (!questions.length && !loading) {
+    if (isPendingQuestions && pollingAttempts < MAX_POLL_ATTEMPTS) {
+      return (
+        <div className="m-6 text-center">
+          <div className="mb-4">
+            <Loader />
+          </div>
+          <h2 className="text-2xl text-indigo-800 font-semibold">Preparing your questions...</h2>
+          <p className="text-gray-600 mt-2">We are generating tailored questions for your session. This usually takes less than a minute.</p>
+          <p className="text-sm text-gray-400 mt-2">Attempts: {pollingAttempts}/{MAX_POLL_ATTEMPTS}</p>
+          <div className="mt-4">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+            >
+              Refresh
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="ml-2 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // If polling exhausted or not pending, show friendly message
     return (
-      <div>
-        <h2>Something wrong with questions fetching. Kindly try again!!</h2>
+      <div className="m-6">
+        <h2 className="text-xl text-red-600">No questions available yet. Please try again later.</h2>
+        <p className="text-gray-600 mt-2">If this keeps occurring, try refreshing or check your internet / server status.</p>
       </div>
     );
   }
@@ -161,13 +338,19 @@ const FreeInterviewPage = () => {
         </button>
         <div className="bg-white p-6 rounded-lg shadow-md flex flex-col md:flex-row flex-grow">
           <div className="flex-1 md:w-2/3">
-            <QuestionDisplay
-              currentQuestion={questions[currentQuestionIndex]}
-              currentQuestionIndex={currentQuestionIndex}
-              totalQuestions={questions.length}
-              answer={answers[currentQuestionIndex] || ""}
-              onAnswerChange={handleAnswerChange}
-            />
+            <div className="flex items-center justify-between">
+              <QuestionDisplay
+                currentQuestion={questions[currentQuestionIndex]}
+                currentQuestionIndex={currentQuestionIndex}
+                totalQuestions={questions.length}
+                answer={answers[currentQuestionIndex] || ""}
+                onAnswerChange={handleAnswerChange}
+              />
+              <div className="ml-4 text-right">
+                <div className="text-sm text-gray-500">Time left</div>
+                <div className="text-2xl font-semibold text-indigo-700">{Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}</div>
+              </div>
+            </div>
             <div className="mt-4 flex flex-row md:flex-row justify-between">
               <RecordingControls
                 listening={listening}

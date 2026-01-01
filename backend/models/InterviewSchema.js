@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const interviewSchema = new mongoose.Schema({
     resume: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Resume',
-        required: true
+        ref: 'Resume'
+        // not required for free interviews
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,

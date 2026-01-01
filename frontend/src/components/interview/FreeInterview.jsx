@@ -26,13 +26,21 @@ const FreeInterview = ({ onClose }) => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
-      const { interviewId } = response.data;
+      // Support both response shapes: { interviewId } and { interview }
+      const interviewId = response.data.interviewId || response.data?.interview?._id;
+
+      if (!interviewId) {
+        setMessage('Failed to start interview. Invalid server response.');
+        setLoading(false);
+        return;
+      }
 
       // Navigate to the InterviewPage with the interviewId
       navigate(`/interview/${interviewId}`);
       onClose(); // Close the modal after navigating
     } catch (error) {
-      setMessage('Error creating interview. Please try again.');
+      const serverMsg = error.response?.data?.message || 'Error creating interview. Please try again.';
+      setMessage(serverMsg);
       console.error('Error starting the interview:', error);
     } finally {
       setLoading(false);
@@ -75,7 +83,9 @@ const FreeInterview = ({ onClose }) => {
           <input
             type="number"
             value={numQuestions}
-            onChange={(e) => setNumQuestions(e.target.value)}
+            onChange={(e) => setNumQuestions(Number(e.target.value))}
+            min={1}
+            max={20}
             className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
             required
           />

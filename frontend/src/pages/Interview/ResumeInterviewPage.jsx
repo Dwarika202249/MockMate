@@ -8,9 +8,9 @@ import OnboardingModal from "../../components/resume/OnboardingModal";
 import PreparationScreen from "../../components/resume/PreparationScreen";
 import AnswerEvaluator from "../../utils/AnswerEvaluator";
 import Loader from "../../components/common/Loader";
-import DeleteModal from "../../components/common/DeleteModal";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import InterviewService from "../../services/InterviewService";
+import PauseModal from "../../components/common/PauseModal";
 
 // Interview Flow Constants
 const INTERVIEW_STATES = {
@@ -156,17 +156,6 @@ const ResumeInterviewPage = () => {
           setQuestions(interview.questions);
           console.log('✅ Questions loaded:', interview.questions.length);
         }
-        
-        // Load conversation history for session persistence
-        if (interview.conversation?.length > 0) {
-          console.log('✅ Loading conversation history:', interview.conversation.length, 'messages');
-          const conversationMessages = interview.conversation.map(msg => ({
-            id: msg.id || `${msg.sender}-${msg.timestamp}-${Math.random()}`,
-            sender: msg.sender,
-            text: msg.text
-          }));
-          setMessages(conversationMessages);
-        }
       } catch (error) {
         console.error('Error fetching interview:', error);
         setError('Failed to load interview data');
@@ -304,24 +293,8 @@ const ResumeInterviewPage = () => {
     console.log('Setting up WebSocket subscriptions');
 
     const unsubQuestions = subscribe('QUESTIONS_READY', (data) => {
-      console.log('\n╔════════════════════════════════════════════════════════╗');
-      console.log('║              QUESTIONS_READY EVENT RECEIVED             ║');
-      console.log('╚════════════════════════════════════════════════════════╝');
-      console.log('📋 QUESTIONS_READY received:', { questionsCount: data.questions?.length, conversationCount: data.conversation?.length });
-      
+      console.log('QUESTIONS_READY received:', data);
       setQuestions(data.questions);
-      
-      // If conversation is included in QUESTIONS_READY (resume case), update messages
-      if (data.conversation && data.conversation.length > 0) {
-        console.log('📝 Restoring conversation history from QUESTIONS_READY:', data.conversation.length, 'messages');
-        const conversationMessages = data.conversation.map(msg => ({
-          id: msg.id || `${msg.sender}-${msg.timestamp}-${Math.random()}`,
-          sender: msg.sender,
-          text: msg.text
-        }));
-        setMessages(conversationMessages);
-      }
-      
       setIsProcessing(false);
     });
 
@@ -438,30 +411,25 @@ const ResumeInterviewPage = () => {
 
   // Handle resume of active interview (when page refreshes during active session)
   useEffect(() => {
-    // Only trigger resume if:
-    // 1. We're running the interview
-    // 2. User already provided introduction
-    // 3. We have questions loaded
-    // 4. We haven't already asked the current question yet (check if current Q is in messages)
-    if (running && userIntroductionProvided && questions.length > 0) {
-      const currentQuestion = questions[currentIndexRef.current];
-      const currentQuestionInChat = messages.some(m => m.text === currentQuestion?.text);
+    if (running && userIntroductionProvided && questions.length > 0 && messages.length === 0) {
+      console.log('🎯 Resuming active interview with intro already provided');
+      console.log('📋 Current question index:', currentIndexRef.current);
+      console.log('📋 Total questions:', questions.length);
       
-      if (currentQuestion && !currentQuestionInChat) {
-        console.log('🎯 Resuming active interview - displaying current question');
-        console.log('📋 Current question index:', currentIndexRef.current);
-        console.log('📋 Question in chat?', currentQuestionInChat);
-        console.log('📋 Total messages:', messages.length);
-        
-        // Ask the current question
+      // If we have a current question to ask, ask it
+      if (currentIndexRef.current < questions.length) {
+        const currentQuestion = questions[currentIndexRef.current];
+        console.log('📝 Asking question at index:', currentIndexRef.current);
         pushAIMessage(currentQuestion.text);
         speakAI(currentQuestion.text, () => {
           console.log('🎤 Question TTS finished, starting to listen');
           startListening();
         });
+      } else {
+        console.warn('⚠️ Invalid question index for resume');
       }
     }
-  }, [running, userIntroductionProvided, questions.length, currentIndexRef.current]);
+  }, [running, userIntroductionProvided, questions.length, messages.length]);
 
   // Removed: This useEffect was causing a race condition with the intro callback
   // askQuestion is now called explicitly from handlePreparationComplete callback
@@ -488,43 +456,12 @@ const ResumeInterviewPage = () => {
     const uniqueId = `ai-${Date.now()}-${Math.random()}-${messageCounterRef.current}`;
     console.log('📌 Pushing AI message with ID:', uniqueId);
     setMessages((m) => [...m, { id: uniqueId, sender: "ai", text }]);
-    
-    // Save message to backend for session persistence
-    saveMessageToBackend('ai', text);
   };
-  
   const pushUserMessage = (text) => {
     messageCounterRef.current += 1;
     const uniqueId = `user-${Date.now()}-${Math.random()}-${messageCounterRef.current}`;
     console.log('📌 Pushing user message with ID:', uniqueId);
     setMessages((m) => [...m, { id: uniqueId, sender: "user", text }]);
-    
-    // Save message to backend for session persistence
-    saveMessageToBackend('user', text);
-  };
-
-  const saveMessageToBackend = async (sender, text) => {
-    try {
-      const response = await fetch(`/api/interview/${interviewId}/message`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          sender,
-          text,
-          timestamp: new Date().toISOString()
-        })
-      });
-      
-      if (!response.ok) {
-        console.warn('⚠️ Failed to save message to backend');
-      }
-    } catch (error) {
-      console.warn('⚠️ Error saving message:', error);
-      // Don't block interview if backend message save fails
-    }
   };
 
   const updateLiveUserBubble = (text) => {
@@ -700,9 +637,9 @@ const ResumeInterviewPage = () => {
                 </div>
                 <button
                   onClick={() => setShowEndModal(true)}
-                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                 >
-                  End
+                  Pause
                 </button>
               </div>
             </div>
@@ -754,7 +691,7 @@ const ResumeInterviewPage = () => {
       </AnimatePresence>
 
       {showEndModal && (
-        <DeleteModal
+        <PauseModal
           show={showEndModal}
           onClose={() => setShowEndModal(false)}
           onConfirm={() => handleEndInterview("Interview ended by user.")}

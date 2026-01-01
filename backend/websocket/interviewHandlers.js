@@ -93,7 +93,6 @@ const interviewHandlers = {
                     
                     io.to(`interview-${interviewId}`).emit('QUESTIONS_READY', {
                         questions: finalQuestions,
-                        conversation: [],
                         currentQuestion: finalQuestions[0]
                     });
                     
@@ -108,14 +107,12 @@ const interviewHandlers = {
                 }
             } else {
                 console.log('\n📋 Using existing questions:', interview.questions?.length || 0);
-                console.log('📋 Conversation history:', interview.conversation?.length || 0, 'messages');
                 // Send existing questions if already generated
                 io.to(`interview-${interviewId}`).emit('QUESTIONS_READY', {
                     questions: interview.questions,
-                    conversation: interview.conversation || [],
                     currentQuestion: interview.questions[interview.currentQuestionIndex || 0]
                 });
-                console.log('✅ Existing questions and conversation emitted\n');
+                console.log('✅ Existing questions emitted\n');
             }
         } catch (error) {
             console.error('\n❌ Error in INITIALIZE_INTERVIEW:', error.message);
