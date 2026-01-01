@@ -21,7 +21,7 @@ const OnboardingModal = ({ onClose, onStart, resumeData }) => {
     // Update form data when resumeData changes (after async fetch)
     useEffect(() => {
         if (resumeData) {
-            console.log('📋 Updating form with resumeData:', resumeData);
+
             setFormData(prev => ({
                 ...prev,
                 jobRole: resumeData.jobRole || prev.jobRole,

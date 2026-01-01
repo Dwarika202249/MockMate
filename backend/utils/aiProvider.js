@@ -133,12 +133,10 @@ const PRE_STORED_QUESTIONS = {
 
 async function generateWithGroq(resumeText, role, numQuestions = 5) {
     if (!GROQ_API_KEY) {
-        console.log('ℹ️  Groq API key not configured, skipping Tier 1');
         return null;
     }
 
     try {
-        console.log('🚀 Trying Tier 1: Groq API...');
         
         const prompt = `You are an expert interviewer for a ${role} position. Generate exactly ${numQuestions} technical interview questions.
 
@@ -189,8 +187,6 @@ Return ONLY a valid JSON array, no other text or markdown:
                     return null; // Force fallback to Tier 2
                 }
                 
-                console.log('✅ Tier 1 Success: Generated questions with Groq API');
-                console.log(`   Validated: ${validQuestions.length}/${questions.length} questions are proper objects`);
                 return validQuestions;
             }
         }
@@ -210,7 +206,6 @@ Return ONLY a valid JSON array, no other text or markdown:
 
 function generateWithStoredDataset(role, numQuestions = 5) {
     try {
-        console.log(`🚀 Trying Tier 2: Pre-stored Question Dataset (requesting ${numQuestions} questions)...`);
         
         // Normalize role
         const normalizedRole = Object.keys(PRE_STORED_QUESTIONS).find(
@@ -225,7 +220,6 @@ function generateWithStoredDataset(role, numQuestions = 5) {
             const shuffled = questions.sort(() => Math.random() - 0.5);
             const selected = shuffled.slice(0, Math.min(numQuestions, questions.length));
             
-            console.log(`✅ Tier 2 Success: Using ${selected.length} pre-stored questions for ${normalizedRole}`);
             return selected;
         }
     } catch (error) {
@@ -233,7 +227,6 @@ function generateWithStoredDataset(role, numQuestions = 5) {
     }
 
     // Ultimate fallback - return requested number of basic generic questions
-    console.log(`⚠️  Pre-stored dataset unavailable, returning ${numQuestions} generic fallback questions`);
     const genericQuestions = [];
     for (let i = 0; i < numQuestions; i++) {
         genericQuestions.push({
@@ -288,32 +281,16 @@ function formatQuestionsForSchema(questions) {
 // ============================================
 
 async function generateQuestionsWithFailover(resumeText, role, numQuestions = 5) {
-    console.log('\n');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🎯 Starting AI Provider Failover Chain');
-    console.log(`   Role: ${role}, Questions: ${numQuestions}`);
-    console.log(`   Input types - resumeText: ${typeof resumeText}, role: ${typeof role}`);
-    console.log('═══════════════════════════════════════════════════════');
-
     let result = null;
 
     // Tier 1: Try Groq API
     let questions = await generateWithGroq(resumeText, role, numQuestions);
     if (questions && questions.length > 0) {
-        console.log('✅ Tier 1 Success - Generated with Groq API');
-        console.log(`   Result type: ${typeof questions}, length: ${questions.length}`);
-        console.log(`   First item type: ${typeof questions[0]}`);
-        if (questions[0]) {
-            console.log(`   First item keys: ${Object.keys(questions[0]).join(', ')}`);
-        }
         result = questions;
     } else {
         // Tier 2: Use Pre-stored Dataset
         questions = generateWithStoredDataset(role, numQuestions);
         if (questions && questions.length > 0) {
-            console.log('✅ Tier 2 Success - Using Pre-stored Dataset');
-            console.log(`   Result type: ${typeof questions}, length: ${questions.length}`);
-            console.log(`   First item type: ${typeof questions[0]}`);
             result = questions;
         }
     }
@@ -334,15 +311,6 @@ async function generateQuestionsWithFailover(resumeText, role, numQuestions = 5)
     if (validatedResult.length === 0) {
         throw new Error('All generated questions failed validation - no valid objects found');
     }
-    
-    console.log('FINAL VALIDATION:');
-    console.log(`  - Is array? ${Array.isArray(validatedResult)}`);
-    console.log(`  - Length: ${validatedResult.length}`);
-    console.log(`  - All items are objects? ${validatedResult.every(q => typeof q === 'object')}`);
-    console.log(`  - First item keys: ${Object.keys(validatedResult[0]).join(', ')}`);
-    
-    console.log('✨ Failover Chain Completed');
-    console.log('═══════════════════════════════════════════════════════\n');
     
     return validatedResult;
 }

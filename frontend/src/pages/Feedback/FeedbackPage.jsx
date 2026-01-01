@@ -16,12 +16,8 @@ const FeedbackPage = () => {
     const fetchFeedback = async () => {
       try {
         setLoading(true);
-        console.log("📥 Fetching interview details for:", interviewId);
 
         const response = await InterviewService.getInterview(interviewId);
-        console.log("✅ Interview data received:", response);
-        console.log("📊 Summary data:", response?.interview?.summary || response?.summary);
-        console.log("📋 PerQuestionFeedback:", response?.interview?.summary?.perQuestionFeedback || response?.summary?.perQuestionFeedback);
 
         setInterview(response.interview || response);
         setError(null);

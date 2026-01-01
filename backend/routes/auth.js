@@ -68,7 +68,7 @@ router.post('/register', async (req, res) => {
             res.json({token});
         });
     } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
         res.status(500).send('Internal server error');
     }
 });

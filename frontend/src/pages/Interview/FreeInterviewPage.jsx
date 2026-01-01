@@ -76,7 +76,6 @@ const FreeInterviewPage = () => {
           setCurrentQuestionIndex(interviewData.pausedState.currentQuestionIndex || 0);
           setElapsedTime(interviewData.pausedState.elapsedTime || 0);
           setAnswers(interviewData.pausedState.answers || {});
-          console.log(`✅ Restored paused state: question ${interviewData.pausedState.currentQuestionIndex}, time ${interviewData.pausedState.elapsedTime}s`);
         }
         
         // Start timer after state restoration
@@ -91,10 +90,8 @@ const FreeInterviewPage = () => {
         // If questions are not yet generated, enable pending state to start polling
         if (!fetchedQuestions.length) {
           setIsPendingQuestions(true);
-          console.log('⚠️ No questions found in interview - questions may still be generating');
         } else {
           setIsPendingQuestions(false);
-          console.log(`✅ Loaded ${fetchedQuestions.length} existing questions from database`);
         }
       } catch (error) {
         console.error("Error fetching interview data:", error);
@@ -303,7 +300,6 @@ const FreeInterviewPage = () => {
         }
       );
       
-      console.log('Interview paused, state saved');
       navigate('/dashboard');
     } catch (error) {
       console.error("Error pausing interview:", error);
@@ -311,7 +307,7 @@ const FreeInterviewPage = () => {
   };
 
   const handleVideoSave = (videoBlob) => {
-    console.log("Video saved:", videoBlob);
+    // Handle video save logic
   };
 
   if (!browserSupportsSpeechRecognition) {
