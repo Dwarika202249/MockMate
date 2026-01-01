@@ -38,7 +38,8 @@ exports.startInterview = async (req, res) => {
         interviewId: interview._id,
         resumeText: resume.summary,
         role: resume.jobRole,
-        numQuestions: 5
+        numQuestions: 5,
+        difficulty: preferences?.difficulty || 'medium'
       });
 
       return res.status(201).json({
@@ -88,7 +89,8 @@ exports.startInterview = async (req, res) => {
       interviewId: interview._id,
       resumeText: details || type || '',
       role: type || details || 'General',
-      numQuestions: numQuestions || 5
+      numQuestions: numQuestions || 5,
+      difficulty: mappedDifficulty
     });
 
     res.status(201).json({

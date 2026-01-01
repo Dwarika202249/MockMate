@@ -204,7 +204,7 @@ Return ONLY a valid JSON array, no other text or markdown:
 // TIER 2: PRE-STORED DATASET (Instant Fallback)
 // ============================================
 
-function generateWithStoredDataset(role, numQuestions = 5) {
+function generateWithStoredDataset(role, numQuestions = 5, difficulty = 'medium') {
     try {
         
         // Normalize role
@@ -220,7 +220,8 @@ function generateWithStoredDataset(role, numQuestions = 5) {
             const shuffled = questions.sort(() => Math.random() - 0.5);
             const selected = shuffled.slice(0, Math.min(numQuestions, questions.length));
             
-            return selected;
+            // Override difficulty to match user preference
+            return selected.map(q => ({ ...q, difficulty }));
         }
     } catch (error) {
         console.warn('⚠️  Tier 2 Failed:', error.message);
@@ -235,7 +236,7 @@ function generateWithStoredDataset(role, numQuestions = 5) {
                 ? 'Tell me about your professional background and experience.'
                 : `Describe a challenging situation you faced and how you resolved it.`,
             type: 'General',
-            difficulty: 'easy',
+            difficulty: difficulty,
             expectedKeywords: ['experience', 'background', 'skills', 'challenge'],
             order: i + 1
         });
@@ -280,16 +281,16 @@ function formatQuestionsForSchema(questions) {
 // MAIN FAILOVER ORCHESTRATOR
 // ============================================
 
-async function generateQuestionsWithFailover(resumeText, role, numQuestions = 5) {
+async function generateQuestionsWithFailover(resumeText, role, numQuestions = 5, difficulty = 'medium') {
     let result = null;
 
     // Tier 1: Try Groq API
-    let questions = await generateWithGroq(resumeText, role, numQuestions);
+    let questions = await generateWithGroq(resumeText, role, numQuestions, difficulty);
     if (questions && questions.length > 0) {
         result = questions;
     } else {
         // Tier 2: Use Pre-stored Dataset
-        questions = generateWithStoredDataset(role, numQuestions);
+        questions = generateWithStoredDataset(role, numQuestions, difficulty);
         if (questions && questions.length > 0) {
             result = questions;
         }
@@ -312,7 +313,10 @@ async function generateQuestionsWithFailover(resumeText, role, numQuestions = 5)
         throw new Error('All generated questions failed validation - no valid objects found');
     }
     
-    return validatedResult;
+    // CRITICAL: Ensure exact number of questions requested
+    const exactCount = validatedResult.slice(0, numQuestions);
+    
+    return exactCount;
 }
 
 // ============================================

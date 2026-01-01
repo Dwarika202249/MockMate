@@ -9,6 +9,7 @@ import { IoSettingsOutline } from "react-icons/io5";
 import { FiHelpCircle } from "react-icons/fi";
 import { MdLogout } from "react-icons/md";
 import ProfileMenu from "../components/common/ProfileMenu";
+import CreditsBadge from "../components/common/CreditsBadge";
 
 const menuItems = [
   { label: "Dashboard", icon: <RiDashboardFill />, route: "/dashboard" },
@@ -127,7 +128,8 @@ const DashboardLayout = () => {
         }`}
       >
         <div className="p-6">
-          <div className="flex justify-end">
+          <div className="flex justify-end items-center gap-4">
+            <CreditsBadge />
             <ProfileMenu onSignOut={handleLogout} />
           </div>
           <Outlet />

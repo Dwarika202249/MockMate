@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 const Interview = require('../models/InterviewSchema');
 const { generateQuestionsWithFailover, evaluateAnswerWithFailover, generateSummaryWithFailover } = require('../utils/aiProvider');
+const { 
+    checkInterviewCredits, 
+    consumeQuestionGenerationCredits,
+    consumeAnswerEvaluationCredits,
+    consumeSummaryCredits 
+} = require('../utils/creditManager');
 
 // WebSocket event handlers for interview flow
 const interviewHandlers = {
@@ -18,16 +24,45 @@ const interviewHandlers = {
                 return;
             }
 
+            // Determine interview type
+            const interviewType = interview.type || 'resume';
+            
+            // Get numQuestions and difficulty from interview preferences
+            const numQuestions = interview.preferences?.numQuestions || 5;
+            const difficulty = interview.preferences?.difficulty || 'medium';
+            
+            // Check credits before generating questions (pass numQuestions for free interviews)
+            const creditCheck = await checkInterviewCredits(interview.user._id, interviewType, numQuestions);
+            
+            if (!creditCheck.hasEnough) {
+                socket.emit('INSUFFICIENT_CREDITS', {
+                    message: 'Insufficient credits to start interview',
+                    required: creditCheck.required,
+                    balance: creditCheck.balance,
+                    interviewType
+                });
+                return;
+            }
+
             // Join interview-specific room
             socket.join(`interview-${interviewId}`);
 
             // Generate initial questions if not already done
             if (!interview.questions || interview.questions.length === 0) {
                 try {
+                    // Consume credits for question generation (pass numQuestions for dynamic calculation)
+                    await consumeQuestionGenerationCredits(
+                        interview.user._id,
+                        interviewId,
+                        interviewType,
+                        numQuestions
+                    );
+                    
                     const questions = await generateQuestionsWithFailover(
-                        interview.resume?.summary || '',
-                        interview.resume?.jobRole || 'General',
-                        5
+                        interview.resume?.summary || interview.details || '',
+                        interview.resume?.jobRole || interview.type || 'General',
+                        numQuestions,
+                        difficulty
                     );
                     
                     if (!questions || questions.length === 0) {
@@ -43,7 +78,7 @@ const interviewHandlers = {
                             id: question.id || `q${idx + 1}`,
                             text: question.text || '',
                             type: question.type || question.topic || 'Technical',
-                            difficulty: question.difficulty || 'medium',
+                            difficulty: question.difficulty || difficulty || 'medium',
                             expectedKeywords: Array.isArray(question.expectedKeywords) 
                                 ? question.expectedKeywords 
                                 : (Array.isArray(question.expected_keywords) ? question.expected_keywords : []),
@@ -144,6 +179,15 @@ const interviewHandlers = {
 
             // Evaluate answer using AI failover (async but emit immediately)
             try {
+                // Consume credits for answer evaluation
+                const interviewType = interviewForQuestions.type || 'resume';
+                await consumeAnswerEvaluationCredits(
+                    interviewForQuestions.user,
+                    interviewId,
+                    interviewType,
+                    currentQuestion.id
+                );
+                
                 const evaluation = await evaluateAnswerWithFailover(
                     currentQuestion,
                     answerText,
@@ -173,6 +217,14 @@ const interviewHandlers = {
                 const isLastQuestion = questionIndex >= interviewForQuestions.questions.length - 1;
 
                 if (isLastQuestion) {
+                    // Consume credits for summary generation
+                    const interviewType = interviewForQuestions.type || 'resume';
+                    await consumeSummaryCredits(
+                        interviewForQuestions.user,
+                        interviewId,
+                        interviewType
+                    );
+                    
                     // Generate interview summary
                     const summary = await generateSummaryWithFailover({
                         questions: interviewForQuestions.questions,

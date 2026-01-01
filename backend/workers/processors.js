@@ -4,26 +4,19 @@ const Interview = require('../models/InterviewSchema');
 
 // Process question generation jobs
 async function processQuestionGeneration(job) {
-    const { resumeText, role, numQuestions, interviewId } = job.data;
+    const { resumeText, role, numQuestions, interviewId, difficulty } = job.data;
     
     try {
         console.log(`\n╔════════════════════════════════════════════════════════╗`);
         console.log(`║       PROCESSING QUESTION GENERATION JOB ${job.id}      ║`);
         console.log(`╚════════════════════════════════════════════════════════╝`);
         console.log(`Interview ID: ${interviewId}`);
-        console.log(`Role: ${role}, NumQuestions: ${numQuestions}`);
+        console.log(`Role: ${role}, NumQuestions: ${numQuestions}, Difficulty: ${difficulty || 'medium'}`);
         
-        const questions = await generateQuestionsWithFailover(resumeText, role, numQuestions);
-        
-        console.log(`✅ Generated ${questions.length} questions`);
-        console.log(`First question type: ${typeof questions[0]}`);
+        const questions = await generateQuestionsWithFailover(resumeText, role, numQuestions, difficulty || 'medium');
         
         // CRITICAL: Final validation before saving to DB
         const validQuestions = questions.filter(q => typeof q === 'object' && q !== null && q.text);
-        if (validQuestions.length === 0) {
-            throw new Error('No valid question objects to save to DB');
-        }
-        console.log(`✅ Validated: ${validQuestions.length} questions are proper objects`);
         
         // Update interview with generated questions
         if (interviewId) {

@@ -36,6 +36,12 @@ const interviewSchema = new mongoose.Schema({
             enum: ['easy', 'medium', 'hard'],
             default: 'medium'
         },
+        numQuestions: {
+            type: Number,
+            min: 3,
+            max: 10,
+            default: 5
+        },
         duration: {
             type: String,
             default: '30'

@@ -1,8 +1,16 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { checkCredits } from '../../redux/slices/creditsSlice';
 import { FiUser, FiBriefcase, FiSettings, FiArrowRight, FiArrowLeft, FiCheck } from 'react-icons/fi';
+import InsufficientCreditsModal from '../common/InsufficientCreditsModal';
 
 const OnboardingModal = ({ onClose, onStart, resumeData }) => {
+    const dispatch = useDispatch();
+    const { balance } = useSelector((state) => state.credits);
+    const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
+    const REQUIRED_CREDITS = 20; // Resume interview costs 20 credits
+    
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         jobRole: resumeData?.jobRole || '',
@@ -17,6 +25,11 @@ const OnboardingModal = ({ onClose, onStart, resumeData }) => {
             interviewerPersonality: 'friendly'
         }
     });
+
+    // Check credits when component mounts
+    useEffect(() => {
+        dispatch(checkCredits(REQUIRED_CREDITS));
+    }, [dispatch]);
 
     // Update form data when resumeData changes (after async fetch)
     useEffect(() => {
@@ -71,6 +84,12 @@ const OnboardingModal = ({ onClose, onStart, resumeData }) => {
         if (step < 3) {
             setStep(step + 1);
         } else {
+            // Check credits before starting interview
+            if (balance < REQUIRED_CREDITS) {
+                setShowInsufficientCredits(true);
+                return;
+            }
+            
             const finalData = {
                 ...formData,
                 resumeContext: {
@@ -288,13 +307,31 @@ const OnboardingModal = ({ onClose, onStart, resumeData }) => {
                     </button>
                     <button
                         onClick={handleNext}
-                        className="flex items-center px-6 py-2 bg-[#9589e6] text-white rounded-lg hover:bg-[#7c6ed6] transition-colors"
+                        className="flex items-center px-6 py-2 bg-[#9589e6] text-white rounded-lg hover:bg-[#7c6ed6] transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                        disabled={step === 3 && balance < REQUIRED_CREDITS}
                     >
-                        {step === 3 ? 'Start Interview' : 'Next'}
+                        {step === 3 ? (balance < REQUIRED_CREDITS ? `Need ${REQUIRED_CREDITS} Credits` : 'Start Interview') : 'Next'}
                         <FiArrowRight className="ml-2" />
                     </button>
                 </div>
+                
+                {/* Credits Info - Show on last step */}
+                {step === 3 && (
+                    <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-3">
+                        <p className="text-sm text-purple-800 text-center">
+                            <strong>Credits Required:</strong> {REQUIRED_CREDITS} AI credits | <strong>Your Balance:</strong> {balance} credits
+                        </p>
+                    </div>
+                )}
             </motion.div>
+            
+            <InsufficientCreditsModal
+                show={showInsufficientCredits}
+                onClose={() => setShowInsufficientCredits(false)}
+                required={REQUIRED_CREDITS}
+                balance={balance}
+                interviewType="resume"
+            />
         </div>
     );
 };

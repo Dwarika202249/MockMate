@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { checkCredits } from '../../redux/slices/creditsSlice';
 import Loader from '../common/Loader';
+import InsufficientCreditsModal from '../common/InsufficientCreditsModal';
 
 const FreeInterview = ({ onClose }) => {
   const [type, setType] = useState('');
@@ -10,10 +13,27 @@ const FreeInterview = ({ onClose }) => {
   const [difficulty, setDifficulty] = useState('basic');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showInsufficientCredits, setShowInsufficientCredits] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { balance } = useSelector((state) => state.credits);
+
+  // Dynamic credit cost: 1 credit per question for free interview
+  const REQUIRED_CREDITS = numQuestions;
+
+  useEffect(() => {
+    // Check credits when component mounts or numQuestions changes
+    dispatch(checkCredits(REQUIRED_CREDITS));
+  }, [dispatch, REQUIRED_CREDITS]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check if user has enough credits
+    if (balance < REQUIRED_CREDITS) {
+      setShowInsufficientCredits(true);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -35,8 +55,8 @@ const FreeInterview = ({ onClose }) => {
         return;
       }
 
-      // Navigate to the InterviewPage with the interviewId
-      navigate(`/interview/${interviewId}`);
+      // Navigate to the preparation page first (allows questions to generate)
+      navigate(`/interview/prepare/${interviewId}`);
       onClose(); // Close the modal after navigating
     } catch (error) {
       const serverMsg = error.response?.data?.message || 'Error creating interview. Please try again.';
@@ -103,12 +123,22 @@ const FreeInterview = ({ onClose }) => {
             <option value="advanced">Advanced</option>
           </select>
         </div>
+        
+        {/* Credits Info */}
+        <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3">
+          <p className="text-sm text-purple-800">
+            <strong>Credits Required:</strong> {REQUIRED_CREDITS} AI credits ({numQuestions} questions × 1 credit)
+            <br />
+            <strong>Your Balance:</strong> {balance} credits
+          </p>
+        </div>
+        
         <button
           type="submit"
-          className="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600"
-          disabled={loading}
+          className="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          disabled={loading || balance < REQUIRED_CREDITS}
         >
-          {loading ? 'Starting...' : 'Start Interview'}
+          {loading ? 'Starting...' : balance < REQUIRED_CREDITS ? 'Insufficient Credits' : 'Start Interview'}
         </button>
       </form>
       {loading && (
@@ -116,6 +146,14 @@ const FreeInterview = ({ onClose }) => {
           <Loader /> 
         </div>
       )}
+      
+      <InsufficientCreditsModal
+        show={showInsufficientCredits}
+        onClose={() => setShowInsufficientCredits(false)}
+        required={REQUIRED_CREDITS}
+        balance={balance}
+        interviewType="free"
+      />
     </div>
   );
 };

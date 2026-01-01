@@ -8,6 +8,7 @@ import { FaCircleInfo } from "react-icons/fa6";
 import { RiLoginBoxFill } from "react-icons/ri";
 import { FaTags  } from "react-icons/fa";
 import ProfileMenu from "./ProfileMenu";
+import CreditsBadge from "./CreditsBadge";
 
 const Navbar = () => {
   const [loggedIn, setLoggedIn] = useState(isAuthenticated());
@@ -95,9 +96,11 @@ const Navbar = () => {
           
 
         {/* Auth Button */}
-        <div className="hidden md:flex px-5">
+        <div className="hidden md:flex items-center gap-3 px-5">
+          {/* Credits Badge - Show only when logged in */}
+          {loggedIn && <CreditsBadge />}
+          
           {/* Profile Avatar */}
-
           {loggedIn && (
             <div className="mr-3"><ProfileMenu onSignOut={handleLogout} /></div>
           )}

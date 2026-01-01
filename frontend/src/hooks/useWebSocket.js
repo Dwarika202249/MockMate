@@ -1,9 +1,12 @@
 import * as React from 'react';
 import { io } from 'socket.io-client';
+import { useDispatch } from 'react-redux';
+import { setBalance } from '../redux/slices/creditsSlice';
 
 export const useWebSocket = () => {
     const [isConnected, setIsConnected] = React.useState(false);
     const socketRef = React.useRef(null);
+    const dispatch = useDispatch();
 
     React.useEffect(() => {
         // Get JWT token from localStorage
@@ -34,6 +37,14 @@ export const useWebSocket = () => {
         socket.on('error', (error) => {
             console.error('WebSocket Error:', error);
         });
+        
+        // Listen for insufficient credits event
+        socket.on('INSUFFICIENT_CREDITS', (data) => {
+            // Update balance in Redux
+            if (data.balance !== undefined) {
+                dispatch(setBalance(data.balance));
+            }
+        });
 
         // Store socket in ref
         socketRef.current = socket;
@@ -44,7 +55,7 @@ export const useWebSocket = () => {
                 socket.disconnect();
             }
         };
-    }, []);
+    }, [dispatch]);
 
     const emit = React.useCallback((eventName, data) => {
         if (socketRef.current && isConnected) {

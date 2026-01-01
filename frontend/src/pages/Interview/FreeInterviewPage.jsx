@@ -90,6 +90,14 @@ const FreeInterviewPage = () => {
         // If questions are not yet generated, enable pending state to start polling
         if (!fetchedQuestions.length) {
           setIsPendingQuestions(true);
+          
+          // Emit WebSocket event to initialize interview and consume credits
+          if (isConnected && emit) {
+            emit('INITIALIZE_INTERVIEW', {
+              interviewId: interviewId,
+              userId: interviewData.user?._id || interviewData.user
+            });
+          }
         } else {
           setIsPendingQuestions(false);
         }
@@ -139,6 +147,31 @@ const FreeInterviewPage = () => {
 
     return () => clearInterval(interval);
   }, [isPendingQuestions, interviewId]);
+
+  // Emit INITIALIZE_INTERVIEW when WebSocket connects and questions are pending
+  useEffect(() => {
+    if (!isConnected || !emit || !isPendingQuestions || !interviewId) return;
+    
+    // Fetch user ID and emit
+    const fetchUserAndEmit = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/api/interview/${interviewId}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+        const interviewData = response.data.interview || response.data;
+        
+        emit('INITIALIZE_INTERVIEW', {
+          interviewId: interviewId,
+          userId: interviewData.user?._id || interviewData.user
+        });
+      } catch (err) {
+        console.error('Failed to emit INITIALIZE_INTERVIEW:', err);
+      }
+    };
+    
+    fetchUserAndEmit();
+  }, [isConnected, emit, isPendingQuestions, interviewId]);
 
   // Socket subscription: if questions are pending, subscribe to QUESTIONS_READY
   // (useWebSocket is declared above to avoid duplicate declarations)
@@ -369,7 +402,6 @@ const FreeInterviewPage = () => {
 
   return (
     <div>
-      <Navbar />
       <h2 className="m-6 mt-28 text-4xl text-indigo-900 font-bold mb-4">Interview</h2>
       <div className="relative flex flex-col md:flex-row">
         <div className="absolute top-4 md:-top-4 right-4 flex gap-2">

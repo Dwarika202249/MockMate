@@ -5,6 +5,7 @@ const http = require('http');
 const authRoutes = require("./routes/auth");
 const interviewRoutes = require('./routes/interview');
 const resumeParserRoute = require('./routes/resumeParser');
+const creditsRoutes = require('./routes/credits');
 const setupWebSocket = require('./utils/websocket');
 const setupWorkers = require('./workers');
 const cors = require("cors");
@@ -25,6 +26,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use('/api/interview', interviewRoutes);
 app.use('/api/resume-parser', resumeParserRoute);
+app.use('/api/credits', creditsRoutes);
 
 //mongodb connection
 const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/";
