@@ -7,13 +7,15 @@ MockMate is a hybrid AI interview preparation application with intelligent 2-tie
 - Local heuristic evaluation for instant feedback
 - Analytics-ready data structures with privacy controls
 - Realtime WebSocket communication for smooth UX
+- Credit-based billing: users receive 100 free AI credits on first login (one-time); a full AI-backed interview consumes ~20 credits. API endpoints: `GET /api/credits`, `POST /api/credits/purchase`, `POST /api/credits/consume`.
 
 ### Tech Stack
-- Frontend: React + Vite with TailwindCSS
+- Frontend: React + Vite with TailwindCSS (deployed on Netlify)
 - State Management: Redux Toolkit
-- Backend: Express.js API with MongoDB
-- Infrastructure: BullMQ/Redis for job queues, WebSocket for realtime updates
-- AI: 2-Tier Failover (Groq → Pre-stored)
+- Backend: Node.js (Express or NestJS) with MongoDB (or Postgres for financial data such as credits) — primary API/gateway (deployed on Render)
+- Python ML microservice: FastAPI for NLP/ML workloads and emotion/vision analysis (deployed separately on Render or GPU hosts)
+- Infrastructure: BullMQ/Redis for Node queues, Celery/RQ for Python workers; Redis as a shared broker
+- AI: 2-Tier Failover (Groq → Pre-stored) with option to self-host open-source models later (Hugging Face, vLLM, Ollama)
 
 ## Architecture & Key Flows
 
@@ -35,10 +37,10 @@ MockMate is a hybrid AI interview preparation application with intelligent 2-tie
    - Analytics and recommendations
 
 ### Backend Architecture
-- Express server with RESTful API endpoints
-- Worker queue for async AI operations
-- WebSocket server for realtime updates
-- 2-Tier AI Provider System (aiProvider.js)
+- Node.js API (Express or NestJS) as the primary gateway: handles auth, credits, WebSocket handlers, and user-facing APIs (deployed on Render).
+- Python ML microservice (FastAPI recommended) for heavy NLP, STT, emotion detection, and evaluation workloads; exposes compact JSON endpoints used by the Node backend.
+- Worker queues: BullMQ/Redis for Node tasks; Celery/RQ and Redis for Python ML jobs. Use asynchronous jobs for long-running LLM/ML inference and return results via WebSocket events.
+- 2-Tier AI Provider System (aiProvider.js) remains: Tier 1 — Groq API (LLM); Tier 2 — pre-stored dataset and local heuristics.
 - Key models:
   ```js
   Interview: {
@@ -58,6 +60,12 @@ MockMate is a hybrid AI interview preparation application with intelligent 2-tie
     skills: Array,
     experience: Array,
     education: Array
+  }
+
+  Credits/User balance: {
+    userId: ObjectId,
+    balance: Number,
+    freeCreditsGrantedAt: Date
   }
   ```
 
@@ -177,11 +185,16 @@ Return ONLY JSON:
 - `POST /api/interview/:id/answer`: Submit answer & trigger evaluation
 - `GET /api/interview/:id`: Get full interview state
 - `POST /api/interview/:id/end`: End interview & generate summary
+- `GET /api/credits`: Get user's credit balance and events
+- `POST /api/credits/purchase`: (Stripe webhook-backed) reconcile purchases and add credits
+- `POST /api/credits/consume`: Atomically consume credits for an operation (used internally by LLM calls)
 
 ### Worker Jobs
-- `generate-initial-questions`: Batch question generation
-- `evaluate-answer`: Deep feedback with Gemini
+- `generate-initial-questions`: Batch question generation (Groq or local fallback)
+- `evaluate-answer`: Deep feedback via LLM or Python ML microservice
 - `generate-summary`: Final interview analysis
+- `stt-processing`: Transcribe audio via Whisper or similar (Python worker)
+- `emotion-analysis`: Audio/visual emotion and expression analysis (Python worker)
 
 ## Development Setup
 
@@ -189,11 +202,14 @@ Return ONLY JSON:
 ```bash
 cd backend
 npm install
-# Required in .env:
-# - MONGO_URI
-# - GEMINI_API_KEY
+# Required in .env (examples):
+# - MONGO_URI (or POSTGRES_URL if you use Postgres for credits)
+# - GROQ_API_KEY
 # - REDIS_URL
+# - STRIPE_SECRET (optional, for billing)
+# - STRIPE_WEBHOOK_SECRET (optional)
 npm start
+# Deploy: frontend → Netlify; Node backend → Render; Python ML microservice → Render or GPU host
 ```
 
 ### Frontend Environment
@@ -239,10 +255,11 @@ Expected Output:
 
 ### Best Practices
 1. Use strict JSON schemas for AI responses
-2. Implement proper error boundaries & fallbacks 
+2. Implement proper error boundaries & fallbacks
 3. Track token usage & implement rate limits
 4. Follow privacy-first data handling
 5. Cache aggressively to reduce API costs
 6. Always deep-copy before MongoDB save: `JSON.parse(JSON.stringify())`
 7. Single formatting point for data transformation
 8. Validate array types before assignment
+9. Ensure atomic credit debits and audit logs for all credit events (purchase/consume) to support refunds and billing reconciliation

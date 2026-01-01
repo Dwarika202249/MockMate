@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import * as React from 'react';
 import { io } from 'socket.io-client';
 
-export const useWebSocket = () => {
-    const [isConnected, setIsConnected] = useState(false);
-    const socketRef = useRef(null);
+// Debug: confirm React import shape at runtime
+console.log('useWebSocket init: React present?', !!React, 'React.useState type:', typeof React.useState);
 
-    useEffect(() => {
+export const useWebSocket = () => {
+    const [isConnected, setIsConnected] = React.useState(false);
+    const socketRef = React.useRef(null);
+
+    React.useEffect(() => {
         // Get JWT token from localStorage
         const token = localStorage.getItem('token');
         
@@ -48,7 +51,7 @@ export const useWebSocket = () => {
         };
     }, []);
 
-    const emit = useCallback((eventName, data) => {
+    const emit = React.useCallback((eventName, data) => {
         console.log(`emit() called for '${eventName}', isConnected: ${isConnected}, socketRef: ${!!socketRef.current}`);
         if (socketRef.current && isConnected) {
             console.log(`emitting '${eventName}' with data:`, data);
@@ -78,7 +81,7 @@ export const useWebSocket = () => {
         }
     }, [isConnected]);
 
-    const subscribe = useCallback((eventName, callback) => {
+    const subscribe = React.useCallback((eventName, callback) => {
         console.log(`subscribe() called for '${eventName}'`);
         if (socketRef.current) {
             socketRef.current.on(eventName, callback);
