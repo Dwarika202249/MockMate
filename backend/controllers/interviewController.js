@@ -133,17 +133,31 @@ exports.createInterview = async (req, res) => {
 // Get interview by ID
 exports.getInterview = async (req, res) => {
   try {
+    console.log(`\n📥 GET Interview request for ID: ${req.params.id}`);
+    
+    // Use lean() to bypass Mongoose validation on potentially corrupted data
     const interview = await Interview.findById(req.params.id)
       .populate('resume')
-      .populate('user', 'name email');
+      .populate('user', 'name email')
+      .lean();
 
     if (!interview) {
+      console.log(`❌ Interview not found: ${req.params.id}`);
       return res.status(404).json({ message: 'Interview not found' });
     }
 
+    console.log(`✅ Interview found:`, {
+      id: interview._id,
+      status: interview.status,
+      hasQuestions: !!interview.questions,
+      questionCount: interview.questions?.length || 0,
+      firstQuestionType: interview.questions?.[0] ? typeof interview.questions[0] : 'N/A'
+    });
+
     res.json({ status: 'success', interview });
   } catch (error) {
-    console.error('Error fetching interview:', error);
+    console.error('❌ Error fetching interview:', error.message);
+    console.error('Stack:', error.stack);
     res.status(500).json({ message: 'Failed to fetch interview' });
   }
 };
@@ -423,6 +437,48 @@ exports.cancelInterview = async (req, res) => {
     console.error('❌ Full error:', error);
     console.error('❌ Stack trace:', error.stack);
     const response = { message: 'Failed to cancel interview' };
+    if (process.env.NODE_ENV !== 'production') response.error = error.message;
+    res.status(500).json(response);
+  }
+};
+
+// Pause interview
+exports.pauseInterview = async (req, res) => {
+  try {
+    const { pausedState } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const interview = await Interview.findById(req.params.interviewId).lean();
+    if (!interview) {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+
+    if (interview.user.toString() !== userId) {
+      return res.status(403).json({ message: 'Unauthorized to pause this interview' });
+    }
+
+    // Update interview with paused state
+    const updatedInterview = await Interview.findByIdAndUpdate(
+      req.params.interviewId,
+      { 
+        $set: { 
+          status: 'in-progress',
+          pausedState: pausedState || {}
+        } 
+      },
+      { new: true, runValidators: false }
+    );
+
+    console.log(`✅ Interview paused: ${req.params.interviewId}, state saved`);
+
+    res.json({ status: 'success', message: 'Interview paused', interview: updatedInterview });
+  } catch (error) {
+    console.error('❌ Error pausing interview:', error.message || error);
+    const response = { message: 'Failed to pause interview' };
     if (process.env.NODE_ENV !== 'production') response.error = error.message;
     res.status(500).json(response);
   }
