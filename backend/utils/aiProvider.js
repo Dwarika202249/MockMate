@@ -181,8 +181,17 @@ Return ONLY a valid JSON array, no other text or markdown:
         if (jsonMatch) {
             const questions = JSON.parse(jsonMatch[0]);
             if (Array.isArray(questions) && questions.length > 0) {
+                // CRITICAL: Validate each question is an object, not a string
+                const validQuestions = questions.filter(q => typeof q === 'object' && q !== null && !Array.isArray(q));
+                
+                if (validQuestions.length === 0) {
+                    console.warn('⚠️  Groq returned array but items are not objects:', questions.map(q => typeof q));
+                    return null; // Force fallback to Tier 2
+                }
+                
                 console.log('✅ Tier 1 Success: Generated questions with Groq API');
-                return questions;  // Return raw questions, NOT formatted
+                console.log(`   Validated: ${validQuestions.length}/${questions.length} questions are proper objects`);
+                return validQuestions;
             }
         }
     } catch (error) {
@@ -313,17 +322,29 @@ async function generateQuestionsWithFailover(resumeText, role, numQuestions = 5)
         throw new Error('All AI provider tiers failed to generate questions');
     }
 
-    // Final validation before returning
+    // CRITICAL VALIDATION: Ensure all items are objects, not strings
+    const validatedResult = result.filter(q => {
+        const isValid = typeof q === 'object' && q !== null && !Array.isArray(q) && q.text;
+        if (!isValid) {
+            console.warn('⚠️  Filtering out invalid question:', typeof q, JSON.stringify(q).substring(0, 100));
+        }
+        return isValid;
+    });
+    
+    if (validatedResult.length === 0) {
+        throw new Error('All generated questions failed validation - no valid objects found');
+    }
+    
     console.log('FINAL VALIDATION:');
-    console.log(`  - Is array? ${Array.isArray(result)}`);
-    console.log(`  - Length: ${result.length}`);
-    console.log(`  - First item is object? ${typeof result[0] === 'object'}`);
-    console.log(`  - First item stringified length: ${JSON.stringify(result[0]).length}`);
+    console.log(`  - Is array? ${Array.isArray(validatedResult)}`);
+    console.log(`  - Length: ${validatedResult.length}`);
+    console.log(`  - All items are objects? ${validatedResult.every(q => typeof q === 'object')}`);
+    console.log(`  - First item keys: ${Object.keys(validatedResult[0]).join(', ')}`);
     
     console.log('✨ Failover Chain Completed');
     console.log('═══════════════════════════════════════════════════════\n');
     
-    return result;
+    return validatedResult;
 }
 
 // ============================================

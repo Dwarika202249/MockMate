@@ -151,7 +151,11 @@ exports.getInterview = async (req, res) => {
       status: interview.status,
       hasQuestions: !!interview.questions,
       questionCount: interview.questions?.length || 0,
-      firstQuestionType: interview.questions?.[0] ? typeof interview.questions[0] : 'N/A'
+      firstQuestionType: interview.questions?.[0] ? typeof interview.questions[0] : 'N/A',
+      hasSummary: !!interview.summary,
+      summaryType: interview.summary?.type,
+      hasPerQuestionFeedback: !!interview.summary?.perQuestionFeedback,
+      perQuestionFeedbackCount: interview.summary?.perQuestionFeedback?.length || 0
     });
 
     res.json({ status: 'success', interview });
@@ -285,6 +289,7 @@ exports.submitInterview = async (req, res) => {
 
     // Local quick evaluation for each answer
     const perQuestionFeedback = [];
+    const answersArray = []; // Array to save in interview.answers field
     let totalScore = 0;
 
     // Lazy import to avoid circulars during startup
@@ -295,13 +300,35 @@ exports.submitInterview = async (req, res) => {
       const expectedKeywords = q.expectedKeywords || [];
       const evalRes = calculateAnswerScore(ans, expectedKeywords);
 
+      // Determine label based on score
+      let label = 'Poor';
+      if (evalRes.score >= 80) label = 'Excellent';
+      else if (evalRes.score >= 60) label = 'Good';
+      else if (evalRes.score >= 40) label = 'OK';
+
+      // For summary.perQuestionFeedback (free interview display)
       perQuestionFeedback.push({
         questionId: q.id || `q-${idx}`,
         question: q.text,
         answer: ans,
         score: evalRes.score,
-        feedback: evalRes.feedback,
-        metrics: evalRes.metrics
+        label: label,
+        strengths: evalRes.feedback.strengths || [],
+        improvements: evalRes.feedback.improvements || [],
+        feedback: `Score: ${evalRes.score}/100. ${evalRes.feedback.strengths.length > 0 ? 'Good job!' : 'Keep practicing!'}`
+      });
+
+      // For interview.answers field (schema structure)
+      answersArray.push({
+        questionId: q.id || `q-${idx}`,
+        text: ans,
+        timestamp: new Date(),
+        feedback: {
+          score: evalRes.score,
+          label: label,
+          strengths: evalRes.feedback.strengths || [],
+          improvements: evalRes.feedback.improvements || []
+        }
       });
 
       totalScore += evalRes.score;
@@ -320,11 +347,19 @@ exports.submitInterview = async (req, res) => {
 
     await feedbackDoc.save();
 
-    // Update interview status and summary using native update (since we used lean())
-    await Interview.findByIdAndUpdate(
+    console.log(`📊 Summary to save:`, {
+      type: 'quick',
+      averageScore,
+      perQuestionFeedbackCount: perQuestionFeedback.length,
+      firstFeedbackItem: perQuestionFeedback[0]
+    });
+
+    // Update interview status, answers, and summary using native update
+    const updateResult = await Interview.findByIdAndUpdate(
       interviewId,
       { 
         $set: { 
+          answers: answersArray, // Save actual answers array
           status: 'completed',
           endTime: new Date(),
           summary: {
@@ -334,8 +369,18 @@ exports.submitInterview = async (req, res) => {
           }
         } 
       },
-      { runValidators: false }
+      { runValidators: false, new: true }
     );
+
+    console.log(`✅ Interview updated:`, {
+      id: updateResult?._id,
+      status: updateResult?.status,
+      answersCount: answersArray.length,
+      averageScore,
+      summaryExists: !!updateResult?.summary,
+      summaryAverageScore: updateResult?.summary?.averageScore,
+      perQuestionFeedbackCount: updateResult?.summary?.perQuestionFeedback?.length || 0
+    });
 
     res.json({
       status: 'success',
