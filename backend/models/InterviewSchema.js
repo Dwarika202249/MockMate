@@ -13,7 +13,7 @@ const interviewSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['created', 'in-progress', 'active', 'completed'],
+        enum: ['created', 'in-progress', 'active', 'completed', 'cancelled', 'deleted'],
         default: 'created'
     },
     preferences: {

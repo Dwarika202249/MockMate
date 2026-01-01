@@ -378,19 +378,53 @@ exports.getInterviewDetails = async (req, res) => {
 // Cancel interview
 exports.cancelInterview = async (req, res) => {
   try {
-    const interview = await Interview.findById(req.params.interviewId);
+    console.log('\n╔════════════════════════════════════════════════════════╗');
+    console.log('║              CANCEL INTERVIEW CALLED                    ║');
+    console.log('╚════════════════════════════════════════════════════════╝');
+    console.log('Params:', req.params);
+    console.log('User:', req.user);
+
+    // Use findById with lean to avoid Mongoose validation on corrupted data
+    const interview = await Interview.findById(req.params.interviewId).lean();
     if (!interview) {
+      console.log('❌ Interview not found:', req.params.interviewId);
       return res.status(404).json({ message: 'Interview not found' });
     }
 
-    interview.status = 'cancelled';
-    interview.endTime = new Date();
-    await interview.save();
+    console.log('✅ Interview found:', { id: interview._id, status: interview.status, user: interview.user });
 
-    res.json({ status: 'success', message: 'Interview cancelled', interview });
+    // Ensure only the owner can cancel
+    const userId = req.user?.id;
+    if (!userId || interview.user.toString() !== userId) {
+      console.log('❌ Unauthorized:', { userId, interviewUser: interview.user.toString() });
+      return res.status(403).json({ message: 'Unauthorized to cancel this interview' });
+    }
+
+    console.log('✅ Authorization passed, setting status to cancelled');
+
+    // Use findByIdAndUpdate with runValidators: false to bypass validation
+    // This avoids re-validating corrupted questions array during cancel
+    const updatedInterview = await Interview.findByIdAndUpdate(
+      req.params.interviewId,
+      { 
+        $set: { 
+          status: 'cancelled', 
+          endTime: new Date() 
+        } 
+      },
+      { new: true, runValidators: false }
+    );
+
+    console.log('✅ Interview cancelled successfully');
+
+    res.json({ status: 'success', message: 'Interview cancelled', interview: updatedInterview });
   } catch (error) {
-    console.error('Error cancelling interview:', error);
-    res.status(500).json({ message: 'Failed to cancel interview' });
+    console.error('❌ Error cancelling interview:', error.message || error);
+    console.error('❌ Full error:', error);
+    console.error('❌ Stack trace:', error.stack);
+    const response = { message: 'Failed to cancel interview' };
+    if (process.env.NODE_ENV !== 'production') response.error = error.message;
+    res.status(500).json(response);
   }
 };
 

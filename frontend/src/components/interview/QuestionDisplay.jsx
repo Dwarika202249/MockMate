@@ -11,7 +11,8 @@ const QuestionDisplay = ({
       <h3 className="text-xl text-indigo-800 font-semibold mb-2">
         Question {currentQuestionIndex + 1} of {totalQuestions}
       </h3>
-      <p className="mb-4">{currentQuestion}</p>
+      {/* Safely extract text from currentQuestion object or render string */}
+      <p className="mb-4">{typeof currentQuestion === 'string' ? currentQuestion : (currentQuestion?.text || 'No question available')}</p>
       <textarea
         value={answer}
         onChange={onAnswerChange}
