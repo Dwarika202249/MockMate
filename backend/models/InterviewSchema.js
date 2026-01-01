@@ -100,6 +100,19 @@ const interviewSchema = new mongoose.Schema({
         timestamp: Date
     },
     summary: {
+        type: { type: String }, // 'quick' or 'detailed'
+        averageScore: Number, // For free interviews
+        perQuestionFeedback: [{ // For free interviews
+            questionId: String,
+            question: String,
+            answer: String,
+            score: Number,
+            label: String,
+            strengths: [String],
+            improvements: [String],
+            feedback: String
+        }],
+        // For resume-based interviews (detailed analysis)
         overallScore: Number,
         keyStrengths: [String],
         areasToImprove: [String],

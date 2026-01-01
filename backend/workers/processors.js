@@ -18,11 +18,18 @@ async function processQuestionGeneration(job) {
         console.log(`✅ Generated ${questions.length} questions`);
         console.log(`First question type: ${typeof questions[0]}`);
         
+        // CRITICAL: Final validation before saving to DB
+        const validQuestions = questions.filter(q => typeof q === 'object' && q !== null && q.text);
+        if (validQuestions.length === 0) {
+            throw new Error('No valid question objects to save to DB');
+        }
+        console.log(`✅ Validated: ${validQuestions.length} questions are proper objects`);
+        
         // Update interview with generated questions
         if (interviewId) {
             // Use native MongoDB to avoid validation issues
             const mongoose = require('mongoose');
-            const plainQuestions = JSON.parse(JSON.stringify(questions));
+            const plainQuestions = JSON.parse(JSON.stringify(validQuestions));
             
             const result = await Interview.collection.updateOne(
                 { _id: new mongoose.Types.ObjectId(interviewId) },

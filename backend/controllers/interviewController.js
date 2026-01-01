@@ -151,7 +151,11 @@ exports.getInterview = async (req, res) => {
       status: interview.status,
       hasQuestions: !!interview.questions,
       questionCount: interview.questions?.length || 0,
-      firstQuestionType: interview.questions?.[0] ? typeof interview.questions[0] : 'N/A'
+      firstQuestionType: interview.questions?.[0] ? typeof interview.questions[0] : 'N/A',
+      hasSummary: !!interview.summary,
+      summaryType: interview.summary?.type,
+      hasPerQuestionFeedback: !!interview.summary?.perQuestionFeedback,
+      perQuestionFeedbackCount: interview.summary?.perQuestionFeedback?.length || 0
     });
 
     res.json({ status: 'success', interview });
@@ -250,29 +254,42 @@ exports.updateInterviewPreferences = async (req, res) => {
 // Submit interview (supports quick free interview submissions)
 exports.submitInterview = async (req, res) => {
   try {
+    console.log('\n╔════════════════════════════════════════════════════════╗');
+    console.log('║            SUBMIT INTERVIEW CALLED                      ║');
+    console.log('╚════════════════════════════════════════════════════════╝');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const { interviewId, answers } = req.body;
     const userId = req.user.id;
 
     if (!interviewId) {
+      console.log('❌ Missing interviewId');
       return res.status(400).json({ message: 'Missing interviewId' });
     }
 
-    const interview = await Interview.findById(interviewId);
+    // Use lean() to bypass validation for corrupted questions
+    const interview = await Interview.findById(interviewId).lean();
     if (!interview) {
+      console.log('❌ Interview not found:', interviewId);
       return res.status(404).json({ message: 'Interview not found' });
     }
 
     if (interview.user.toString() !== userId) {
+      console.log('❌ Unauthorized:', { userId, interviewUser: interview.user.toString() });
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
     // If no questions were generated, return an error
     if (!Array.isArray(interview.questions) || interview.questions.length === 0) {
+      console.log('❌ No questions available');
       return res.status(400).json({ message: 'No questions available for this interview yet' });
     }
 
+    console.log(`✅ Found ${interview.questions.length} questions, processing answers...`);
+
     // Local quick evaluation for each answer
     const perQuestionFeedback = [];
+    const answersArray = []; // Array to save in interview.answers field
     let totalScore = 0;
 
     // Lazy import to avoid circulars during startup
@@ -283,13 +300,35 @@ exports.submitInterview = async (req, res) => {
       const expectedKeywords = q.expectedKeywords || [];
       const evalRes = calculateAnswerScore(ans, expectedKeywords);
 
+      // Determine label based on score
+      let label = 'Poor';
+      if (evalRes.score >= 80) label = 'Excellent';
+      else if (evalRes.score >= 60) label = 'Good';
+      else if (evalRes.score >= 40) label = 'OK';
+
+      // For summary.perQuestionFeedback (free interview display)
       perQuestionFeedback.push({
         questionId: q.id || `q-${idx}`,
         question: q.text,
         answer: ans,
         score: evalRes.score,
-        feedback: evalRes.feedback,
-        metrics: evalRes.metrics
+        label: label,
+        strengths: evalRes.feedback.strengths || [],
+        improvements: evalRes.feedback.improvements || [],
+        feedback: `Score: ${evalRes.score}/100. ${evalRes.feedback.strengths.length > 0 ? 'Good job!' : 'Keep practicing!'}`
+      });
+
+      // For interview.answers field (schema structure)
+      answersArray.push({
+        questionId: q.id || `q-${idx}`,
+        text: ans,
+        timestamp: new Date(),
+        feedback: {
+          score: evalRes.score,
+          label: label,
+          strengths: evalRes.feedback.strengths || [],
+          improvements: evalRes.feedback.improvements || []
+        }
       });
 
       totalScore += evalRes.score;
@@ -308,16 +347,40 @@ exports.submitInterview = async (req, res) => {
 
     await feedbackDoc.save();
 
-    // Update interview status and summary
-    interview.status = 'completed';
-    interview.endTime = new Date();
-    interview.summary = {
+    console.log(`📊 Summary to save:`, {
       type: 'quick',
       averageScore,
-      perQuestionFeedback
-    };
+      perQuestionFeedbackCount: perQuestionFeedback.length,
+      firstFeedbackItem: perQuestionFeedback[0]
+    });
 
-    await interview.save();
+    // Update interview status, answers, and summary using native update
+    const updateResult = await Interview.findByIdAndUpdate(
+      interviewId,
+      { 
+        $set: { 
+          answers: answersArray, // Save actual answers array
+          status: 'completed',
+          endTime: new Date(),
+          summary: {
+            type: 'quick',
+            averageScore,
+            perQuestionFeedback
+          }
+        } 
+      },
+      { runValidators: false, new: true }
+    );
+
+    console.log(`✅ Interview updated:`, {
+      id: updateResult?._id,
+      status: updateResult?.status,
+      answersCount: answersArray.length,
+      averageScore,
+      summaryExists: !!updateResult?.summary,
+      summaryAverageScore: updateResult?.summary?.averageScore,
+      perQuestionFeedbackCount: updateResult?.summary?.perQuestionFeedback?.length || 0
+    });
 
     res.json({
       status: 'success',
