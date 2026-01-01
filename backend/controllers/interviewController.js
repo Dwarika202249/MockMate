@@ -250,26 +250,38 @@ exports.updateInterviewPreferences = async (req, res) => {
 // Submit interview (supports quick free interview submissions)
 exports.submitInterview = async (req, res) => {
   try {
+    console.log('\n╔════════════════════════════════════════════════════════╗');
+    console.log('║            SUBMIT INTERVIEW CALLED                      ║');
+    console.log('╚════════════════════════════════════════════════════════╝');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const { interviewId, answers } = req.body;
     const userId = req.user.id;
 
     if (!interviewId) {
+      console.log('❌ Missing interviewId');
       return res.status(400).json({ message: 'Missing interviewId' });
     }
 
-    const interview = await Interview.findById(interviewId);
+    // Use lean() to bypass validation for corrupted questions
+    const interview = await Interview.findById(interviewId).lean();
     if (!interview) {
+      console.log('❌ Interview not found:', interviewId);
       return res.status(404).json({ message: 'Interview not found' });
     }
 
     if (interview.user.toString() !== userId) {
+      console.log('❌ Unauthorized:', { userId, interviewUser: interview.user.toString() });
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
     // If no questions were generated, return an error
     if (!Array.isArray(interview.questions) || interview.questions.length === 0) {
+      console.log('❌ No questions available');
       return res.status(400).json({ message: 'No questions available for this interview yet' });
     }
+
+    console.log(`✅ Found ${interview.questions.length} questions, processing answers...`);
 
     // Local quick evaluation for each answer
     const perQuestionFeedback = [];
@@ -308,16 +320,22 @@ exports.submitInterview = async (req, res) => {
 
     await feedbackDoc.save();
 
-    // Update interview status and summary
-    interview.status = 'completed';
-    interview.endTime = new Date();
-    interview.summary = {
-      type: 'quick',
-      averageScore,
-      perQuestionFeedback
-    };
-
-    await interview.save();
+    // Update interview status and summary using native update (since we used lean())
+    await Interview.findByIdAndUpdate(
+      interviewId,
+      { 
+        $set: { 
+          status: 'completed',
+          endTime: new Date(),
+          summary: {
+            type: 'quick',
+            averageScore,
+            perQuestionFeedback
+          }
+        } 
+      },
+      { runValidators: false }
+    );
 
     res.json({
       status: 'success',

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
@@ -25,9 +25,13 @@ const FreeInterviewPage = () => {
   const [interviewMeta, setInterviewMeta] = useState({});
   const [loading, setLoading] = useState(true);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isTimerActive, setIsTimerActive] = useState(false);
   const [pollingAttempts, setPollingAttempts] = useState(0);
   const [isPendingQuestions, setIsPendingQuestions] = useState(false);
   const MAX_POLL_ATTEMPTS = 12; // ~1 minute if interval is 5s
+
+  // Refs to track latest values for auto-save without re-creating interval
+  const stateRef = useRef({ currentQuestionIndex: 0, elapsedTime: 0, answers: {} });
 
   const navigate = useNavigate();
 
@@ -57,13 +61,13 @@ const FreeInterviewPage = () => {
         const interviewData = response.data.interview || response.data;
 
         const fetchedQuestions = interviewData.questions || [];
-        console.log('📊 Fetched interview data:', { 
-          id: interviewData._id,
-          hasQuestions: !!fetchedQuestions.length,
-          questionCount: fetchedQuestions.length,
-          firstQuestionType: fetchedQuestions[0] ? typeof fetchedQuestions[0] : 'N/A',
-          status: interviewData.status
-        });
+        // console.log('📊 Fetched interview data:', { 
+        //   id: interviewData._id,
+        //   hasQuestions: !!fetchedQuestions.length,
+        //   questionCount: fetchedQuestions.length,
+        //   firstQuestionType: fetchedQuestions[0] ? typeof fetchedQuestions[0] : 'N/A',
+        //   status: interviewData.status
+        // });
         
         setQuestions(fetchedQuestions);
         
@@ -72,8 +76,11 @@ const FreeInterviewPage = () => {
           setCurrentQuestionIndex(interviewData.pausedState.currentQuestionIndex || 0);
           setElapsedTime(interviewData.pausedState.elapsedTime || 0);
           setAnswers(interviewData.pausedState.answers || {});
-          console.log(`Restored paused state: question ${interviewData.pausedState.currentQuestionIndex}, time ${interviewData.pausedState.elapsedTime}s`);
+          console.log(`✅ Restored paused state: question ${interviewData.pausedState.currentQuestionIndex}, time ${interviewData.pausedState.elapsedTime}s`);
         }
+        
+        // Start timer after state restoration
+        setIsTimerActive(true);
         
         setInterviewMeta({
           type: interviewData.type || interviewData?.preferences?.interviewStyle || 'free',
@@ -173,14 +180,49 @@ const FreeInterviewPage = () => {
     }));
   }, [transcript, currentQuestionIndex]);
 
+  // Keep stateRef updated with latest values
+  useEffect(() => {
+    stateRef.current = { currentQuestionIndex, elapsedTime, answers };
+  }, [currentQuestionIndex, elapsedTime, answers]);
+
   // Overall session timer - tracks total time spent on interview page
   useEffect(() => {
+    if (!isTimerActive) return;
+    
     const timer = setInterval(() => {
       setElapsedTime((t) => t + 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [isTimerActive]);
+
+  // Auto-save timer state to DB every 5 seconds (so refresh preserves timer)
+  useEffect(() => {
+    if (!isTimerActive) return;
+    
+    const autoSaveInterval = setInterval(async () => {
+      const { currentQuestionIndex, elapsedTime, answers } = stateRef.current;
+      try {
+        await axios.patch(
+          `${import.meta.env.VITE_BASE_URL}/api/interview/${interviewId}/pause`,
+          {
+            pausedState: {
+              currentQuestionIndex,
+              elapsedTime,
+              answers
+            }
+          },
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          }
+        );
+      } catch (error) {
+        console.error("Auto-save failed:", error.message);
+      }
+    }, 5000); // Save every 5 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [isTimerActive, interviewId]); // Only depends on isTimerActive and interviewId
 
   const handleAnswerChange = (event) => {
     setAnswers({
@@ -243,6 +285,9 @@ const FreeInterviewPage = () => {
 
   const handlePauseInterview = async () => {
     try {
+      // Stop timer before pausing
+      setIsTimerActive(false);
+      
       // Save current state to DB
       await axios.patch(
         `${import.meta.env.VITE_BASE_URL}/api/interview/${interviewId}/pause`,
