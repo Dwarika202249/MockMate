@@ -8,35 +8,27 @@ const interviewHandlers = {
     INITIALIZE_INTERVIEW: async (io, socket, data) => {
         try {
             const { interviewId, userId } = data;
-            console.log('\n╔════════════════════════════════════════════════════════╗');
-            console.log('║         INITIALIZE_INTERVIEW HANDLER CALLED             ║');
-            console.log('╚════════════════════════════════════════════════════════╝');
-            console.log('Received data:', { interviewId, userId, socketId: socket.id });
             
             const interview = await Interview.findById(interviewId)
                 .populate('resume')
                 .populate('user', 'name email');
 
             if (!interview) {
-                console.log('❌ Interview not found:', interviewId);
                 socket.emit('ERROR', { message: 'Interview not found' });
                 return;
             }
 
-            console.log('✅ Interview found, joining room: interview-' + interviewId);
             // Join interview-specific room
             socket.join(`interview-${interviewId}`);
 
             // Generate initial questions if not already done
             if (!interview.questions || interview.questions.length === 0) {
                 try {
-                    console.log('\n📝 Generating questions for:', interview.resume?.jobRole || 'Unknown');
                     const questions = await generateQuestionsWithFailover(
                         interview.resume?.summary || '',
                         interview.resume?.jobRole || 'General',
                         5
                     );
-                    console.log('\n✅ Questions generated:', questions?.length || 0);
                     
                     if (!questions || questions.length === 0) {
                         throw new Error('No questions returned from AI provider failover');
@@ -77,26 +69,14 @@ const interviewHandlers = {
                         { $set: { questions: plainQuestionsArray } }
                     );
                     
-                    console.log('MongoDB native update result:', { 
-                        acknowledged: result.acknowledged,
-                        modifiedCount: result.modifiedCount 
-                    });
-                    
                     // Re-fetch the updated document (use lean to ensure questions are hydrated)
                     const updatedInterview = await Interview.findById(interviewId).lean();
                     const finalQuestions = updatedInterview?.questions || plainQuestionsArray;
 
-                    console.log('\n📤 Emitting QUESTIONS_READY to room interview-' + interviewId);
-                    console.log('   Questions count:', finalQuestions.length);
-                    console.log('   First question type:', typeof finalQuestions[0]);
-                    console.log('   First question ID:', finalQuestions[0]?.id);
-                    
                     io.to(`interview-${interviewId}`).emit('QUESTIONS_READY', {
                         questions: finalQuestions,
                         currentQuestion: finalQuestions[0]
                     });
-                    
-                    console.log('✅ QUESTIONS_READY emitted successfully\n');
                 } catch (error) {
                     console.error('❌ Error generating questions:', error.message);
                     console.error('Error stack:', error.stack);
@@ -106,13 +86,11 @@ const interviewHandlers = {
                     });
                 }
             } else {
-                console.log('\n📋 Using existing questions:', interview.questions?.length || 0);
                 // Send existing questions if already generated
                 io.to(`interview-${interviewId}`).emit('QUESTIONS_READY', {
                     questions: interview.questions,
                     currentQuestion: interview.questions[interview.currentQuestionIndex || 0]
                 });
-                console.log('✅ Existing questions emitted\n');
             }
         } catch (error) {
             console.error('\n❌ Error in INITIALIZE_INTERVIEW:', error.message);
@@ -124,10 +102,6 @@ const interviewHandlers = {
     SUBMIT_ANSWER: async (io, socket, data) => {
         try {
             const { interviewId, answerId, answer, context } = data;
-            console.log('\n╔════════════════════════════════════════════════════════╗');
-            console.log('║              SUBMIT_ANSWER HANDLER CALLED               ║');
-            console.log('╚════════════════════════════════════════════════════════╝');
-            console.log('📝 SUBMIT_ANSWER received:', { interviewId, answerId, answerText: answer?.text?.substring(0, 50), context });
 
             // Use lean() to fetch questions without re-casting issues
             const interviewForQuestions = await Interview.findById(interviewId).lean();
@@ -140,16 +114,6 @@ const interviewHandlers = {
 
             // Respect saved resume progress - the frontend has already determined intro status
             // If this is being called, assume the frontend has correctly assessed the state
-            console.log('📊 Interview session state:', {
-                userIntroductionProvided: interviewForQuestions.userIntroductionProvided,
-                currentQuestionIndex: interviewForQuestions.currentQuestionIndex
-            });
-
-            console.log('📋 Interview loaded, checking questions:', { 
-                hasQuestions: !!interviewForQuestions.questions,
-                isArray: Array.isArray(interviewForQuestions.questions),
-                count: interviewForQuestions.questions?.length || 0
-            });
 
             // Validate questions array exists
             if (!interviewForQuestions.questions || !Array.isArray(interviewForQuestions.questions) || interviewForQuestions.questions.length === 0) {
@@ -163,7 +127,6 @@ const interviewHandlers = {
 
             // Find the current question
             const questionIndex = context?.currentIndex || 0;
-            console.log('📋 Current question index:', questionIndex, 'Total questions:', interviewForQuestions.questions.length);
             
             const currentQuestion = interviewForQuestions.questions[questionIndex];
             if (!currentQuestion) {
@@ -172,28 +135,20 @@ const interviewHandlers = {
                 return;
             }
 
-            console.log('✅ Question found:', { id: currentQuestion.id, text: currentQuestion.text?.substring(0, 50) });
-
             // Extract answer text safely
             const answerText = (answer?.text || answer || '').toString().trim();
             if (!answerText) {
-                console.warn('⚠️ Empty answer text');
                 socket.emit('ERROR', { message: 'Empty answer text' });
                 return;
             }
 
-            console.log('🔍 Evaluating answer...');
-
             // Evaluate answer using AI failover (async but emit immediately)
             try {
-                console.log('📤 About to call evaluateAnswerWithFailover with question:', { id: currentQuestion.id, text: currentQuestion.text?.substring(0, 50) });
                 const evaluation = await evaluateAnswerWithFailover(
                     currentQuestion,
                     answerText,
                     interviewForQuestions.preferences
                 );
-
-                console.log('✅ Evaluation complete:', { score: evaluation?.score, label: evaluation?.label });
                 
                 if (!evaluation) {
                     console.error('❌ Evaluation returned null/undefined');
@@ -218,8 +173,6 @@ const interviewHandlers = {
                 const isLastQuestion = questionIndex >= interviewForQuestions.questions.length - 1;
 
                 if (isLastQuestion) {
-                    console.log('🏁 Interview ending - last question answered');
-                    
                     // Generate interview summary
                     const summary = await generateSummaryWithFailover({
                         questions: interviewForQuestions.questions,
@@ -256,8 +209,6 @@ const interviewHandlers = {
                         },
                         { new: true }
                     );
-                    
-                    console.log('✅ Answer saved and interview marked as completed');
 
                     // Emit evaluation result
                     io.to(`interview-${interviewId}`).emit('ANSWER_EVALUATED', {
@@ -266,13 +217,10 @@ const interviewHandlers = {
                         questionId: currentQuestion.id
                     });
 
-                    console.log('📤 ANSWER_EVALUATED emitted');
-
                     io.to(`interview-${interviewId}`).emit('INTERVIEW_COMPLETED', {
                         summary,
                         outroMessage
                     });
-                    console.log('📤 INTERVIEW_COMPLETED emitted with outro');
                 } else {
                     // Use findByIdAndUpdate to add answer and increment question index
                     await Interview.findByIdAndUpdate(
@@ -283,8 +231,6 @@ const interviewHandlers = {
                         },
                         { new: true }
                     );
-                    
-                    console.log('✅ Answer saved to database');
 
                     // Emit evaluation result
                     io.to(`interview-${interviewId}`).emit('ANSWER_EVALUATED', {
@@ -293,21 +239,16 @@ const interviewHandlers = {
                         questionId: currentQuestion.id
                     });
 
-                    console.log('📤 ANSWER_EVALUATED emitted to room: interview-' + interviewId);
-
                     const nextQuestion = interviewForQuestions.questions[questionIndex + 1];
-                    console.log('➡️ Moving to next question:', { index: questionIndex + 1, id: nextQuestion?.id });
 
                     io.to(`interview-${interviewId}`).emit('NEXT_QUESTION', {
                         question: nextQuestion
                     });
-                    console.log('📤 NEXT_QUESTION emitted to room: interview-' + interviewId);
                 }
             } catch (error) {
                 console.error('\n❌ ERROR IN ANSWER EVALUATION:');
                 console.error('   Message:', error.message);
                 console.error('   Stack:', error.stack);
-                console.log('📤 Emitting ERROR event to frontend');
                 socket.emit('ERROR', { 
                     message: 'Failed to evaluate answer: ' + error.message
                 });

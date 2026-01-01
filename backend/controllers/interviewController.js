@@ -133,8 +133,6 @@ exports.createInterview = async (req, res) => {
 // Get interview by ID
 exports.getInterview = async (req, res) => {
   try {
-    console.log(`\n📥 GET Interview request for ID: ${req.params.id}`);
-    
     // Use lean() to bypass Mongoose validation on potentially corrupted data
     const interview = await Interview.findById(req.params.id)
       .populate('resume')
@@ -142,21 +140,8 @@ exports.getInterview = async (req, res) => {
       .lean();
 
     if (!interview) {
-      console.log(`❌ Interview not found: ${req.params.id}`);
       return res.status(404).json({ message: 'Interview not found' });
     }
-
-    console.log(`✅ Interview found:`, {
-      id: interview._id,
-      status: interview.status,
-      hasQuestions: !!interview.questions,
-      questionCount: interview.questions?.length || 0,
-      firstQuestionType: interview.questions?.[0] ? typeof interview.questions[0] : 'N/A',
-      hasSummary: !!interview.summary,
-      summaryType: interview.summary?.type,
-      hasPerQuestionFeedback: !!interview.summary?.perQuestionFeedback,
-      perQuestionFeedbackCount: interview.summary?.perQuestionFeedback?.length || 0
-    });
 
     res.json({ status: 'success', interview });
   } catch (error) {
@@ -170,7 +155,6 @@ exports.getInterview = async (req, res) => {
 exports.updateInterviewPreferences = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('📝 Update request - ID:', id, 'Body:', JSON.stringify(req.body));
 
     // Validate that ID is a valid MongoDB ObjectId
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -186,12 +170,10 @@ exports.updateInterviewPreferences = async (req, res) => {
     // Add top-level persistence fields
     if (userIntroductionProvided !== undefined) {
       updateObj.userIntroductionProvided = userIntroductionProvided;
-      console.log('✅ Will update userIntroductionProvided to:', userIntroductionProvided);
     }
 
     if (currentQuestionIndex !== undefined) {
       updateObj.currentQuestionIndex = currentQuestionIndex;
-      console.log('✅ Will update currentQuestionIndex to:', currentQuestionIndex);
     }
 
     // Build the preferences update object, filtering out any non-preference fields
@@ -214,7 +196,6 @@ exports.updateInterviewPreferences = async (req, res) => {
     // Only add preferences to update if there are fields to update
     if (Object.keys(preferencesUpdate).length > 0) {
       updateObj.preferences = preferencesUpdate;
-      console.log('✅ Will update preferences:', preferencesUpdate);
     }
 
     // Add status to update object
@@ -226,10 +207,7 @@ exports.updateInterviewPreferences = async (req, res) => {
       if (status === 'completed') {
         updateObj.endTime = new Date();
       }
-      console.log('✅ Will update status to:', status);
     }
-
-    console.log('📝 Update object:', JSON.stringify(updateObj));
 
     // Use findByIdAndUpdate for atomic operation
     const updatedInterview = await Interview.findByIdAndUpdate(
@@ -242,7 +220,6 @@ exports.updateInterviewPreferences = async (req, res) => {
       return res.status(404).json({ message: 'Interview not found' });
     }
 
-    console.log('✅ Interview updated successfully:', { id: updatedInterview._id, status: updatedInterview.status });
     res.json({ status: 'success', interview: updatedInterview });
   } catch (error) {
     console.error('❌ Error updating preferences:', error.message);
@@ -254,38 +231,27 @@ exports.updateInterviewPreferences = async (req, res) => {
 // Submit interview (supports quick free interview submissions)
 exports.submitInterview = async (req, res) => {
   try {
-    console.log('\n╔════════════════════════════════════════════════════════╗');
-    console.log('║            SUBMIT INTERVIEW CALLED                      ║');
-    console.log('╚════════════════════════════════════════════════════════╝');
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-    
     const { interviewId, answers } = req.body;
     const userId = req.user.id;
 
     if (!interviewId) {
-      console.log('❌ Missing interviewId');
       return res.status(400).json({ message: 'Missing interviewId' });
     }
 
     // Use lean() to bypass validation for corrupted questions
     const interview = await Interview.findById(interviewId).lean();
     if (!interview) {
-      console.log('❌ Interview not found:', interviewId);
       return res.status(404).json({ message: 'Interview not found' });
     }
 
     if (interview.user.toString() !== userId) {
-      console.log('❌ Unauthorized:', { userId, interviewUser: interview.user.toString() });
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
     // If no questions were generated, return an error
     if (!Array.isArray(interview.questions) || interview.questions.length === 0) {
-      console.log('❌ No questions available');
       return res.status(400).json({ message: 'No questions available for this interview yet' });
     }
-
-    console.log(`✅ Found ${interview.questions.length} questions, processing answers...`);
 
     // Local quick evaluation for each answer
     const perQuestionFeedback = [];
@@ -347,13 +313,6 @@ exports.submitInterview = async (req, res) => {
 
     await feedbackDoc.save();
 
-    console.log(`📊 Summary to save:`, {
-      type: 'quick',
-      averageScore,
-      perQuestionFeedbackCount: perQuestionFeedback.length,
-      firstFeedbackItem: perQuestionFeedback[0]
-    });
-
     // Update interview status, answers, and summary using native update
     const updateResult = await Interview.findByIdAndUpdate(
       interviewId,
@@ -371,16 +330,6 @@ exports.submitInterview = async (req, res) => {
       },
       { runValidators: false, new: true }
     );
-
-    console.log(`✅ Interview updated:`, {
-      id: updateResult?._id,
-      status: updateResult?.status,
-      answersCount: answersArray.length,
-      averageScore,
-      summaryExists: !!updateResult?.summary,
-      summaryAverageScore: updateResult?.summary?.averageScore,
-      perQuestionFeedbackCount: updateResult?.summary?.perQuestionFeedback?.length || 0
-    });
 
     res.json({
       status: 'success',
@@ -404,8 +353,6 @@ exports.getInterviewHistory = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    console.log(`📋 Fetching interview history for user ${userId} - Page: ${page}, Limit: ${limit}`);
-
     // Get total count for pagination
     const total = await Interview.countDocuments({ user: userId });
 
@@ -415,8 +362,6 @@ exports.getInterviewHistory = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-
-    console.log(`✅ Found ${interviews.length} interviews (Total: ${total})`);
 
     res.json({
       status: 'success',
@@ -455,29 +400,17 @@ exports.getInterviewDetails = async (req, res) => {
 // Cancel interview
 exports.cancelInterview = async (req, res) => {
   try {
-    console.log('\n╔════════════════════════════════════════════════════════╗');
-    console.log('║              CANCEL INTERVIEW CALLED                    ║');
-    console.log('╚════════════════════════════════════════════════════════╝');
-    console.log('Params:', req.params);
-    console.log('User:', req.user);
-
     // Use findById with lean to avoid Mongoose validation on corrupted data
     const interview = await Interview.findById(req.params.interviewId).lean();
     if (!interview) {
-      console.log('❌ Interview not found:', req.params.interviewId);
       return res.status(404).json({ message: 'Interview not found' });
     }
-
-    console.log('✅ Interview found:', { id: interview._id, status: interview.status, user: interview.user });
 
     // Ensure only the owner can cancel
     const userId = req.user?.id;
     if (!userId || interview.user.toString() !== userId) {
-      console.log('❌ Unauthorized:', { userId, interviewUser: interview.user.toString() });
       return res.status(403).json({ message: 'Unauthorized to cancel this interview' });
     }
-
-    console.log('✅ Authorization passed, setting status to cancelled');
 
     // Use findByIdAndUpdate with runValidators: false to bypass validation
     // This avoids re-validating corrupted questions array during cancel
@@ -491,8 +424,6 @@ exports.cancelInterview = async (req, res) => {
       },
       { new: true, runValidators: false }
     );
-
-    console.log('✅ Interview cancelled successfully');
 
     res.json({ status: 'success', message: 'Interview cancelled', interview: updatedInterview });
   } catch (error) {
@@ -535,8 +466,6 @@ exports.pauseInterview = async (req, res) => {
       },
       { new: true, runValidators: false }
     );
-
-    console.log(`✅ Interview paused: ${req.params.interviewId}, state saved`);
 
     res.json({ status: 'success', message: 'Interview paused', interview: updatedInterview });
   } catch (error) {

@@ -34,14 +34,10 @@ class InterviewService {
 
     static async updateInterviewPreferences(interviewId, preferences) {
         try {
-            console.log('🔗 API Call:', { url: `${API_URL}/interview/${interviewId}/preferences`, preferences });
             const response = await axios.put(`${API_URL}/interview/${interviewId}/preferences`, preferences, this.getAuthHeaders());
-            console.log('✅ Update response:', response.data);
             return response.data;
         } catch (error) {
-            console.error('❌ Update error:', error);
             const handled = this.handleError(error);
-            console.error('❌ Handled error:', handled);
             throw handled;
         }
     }
