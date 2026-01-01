@@ -31,6 +31,9 @@ router.get("/:interviewId/details", userAuth, interviewController.getInterviewDe
 // Cancel interview (DELETE /api/interview/:interviewId/cancel)
 router.delete("/:interviewId/cancel", userAuth, interviewController.cancelInterview);
 
+// Pause interview (PATCH /api/interview/:interviewId/pause)
+router.patch("/:interviewId/pause", userAuth, interviewController.pauseInterview);
+
 // Delete interview (DELETE /api/interview/:interviewId/delete)
 router.delete("/:interviewId/delete", userAuth, interviewController.deleteInterview);
 

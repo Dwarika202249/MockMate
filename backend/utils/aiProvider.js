@@ -201,7 +201,7 @@ Return ONLY a valid JSON array, no other text or markdown:
 
 function generateWithStoredDataset(role, numQuestions = 5) {
     try {
-        console.log('🚀 Trying Tier 2: Pre-stored Question Dataset...');
+        console.log(`🚀 Trying Tier 2: Pre-stored Question Dataset (requesting ${numQuestions} questions)...`);
         
         // Normalize role
         const normalizedRole = Object.keys(PRE_STORED_QUESTIONS).find(
@@ -216,33 +216,29 @@ function generateWithStoredDataset(role, numQuestions = 5) {
             const shuffled = questions.sort(() => Math.random() - 0.5);
             const selected = shuffled.slice(0, Math.min(numQuestions, questions.length));
             
-            console.log(`✅ Tier 2 Success: Using pre-stored questions for ${normalizedRole}`);
+            console.log(`✅ Tier 2 Success: Using ${selected.length} pre-stored questions for ${normalizedRole}`);
             return selected;
         }
     } catch (error) {
         console.warn('⚠️  Tier 2 Failed:', error.message);
     }
 
-    // Ultimate fallback - return basic generic questions
-    console.log('⚠️  Pre-stored dataset unavailable, returning generic fallback questions');
-    return [
-        {
-            id: 'q1',
-            text: 'Tell me about your professional background and experience.',
+    // Ultimate fallback - return requested number of basic generic questions
+    console.log(`⚠️  Pre-stored dataset unavailable, returning ${numQuestions} generic fallback questions`);
+    const genericQuestions = [];
+    for (let i = 0; i < numQuestions; i++) {
+        genericQuestions.push({
+            id: `q${i + 1}`,
+            text: i === 0 
+                ? 'Tell me about your professional background and experience.'
+                : `Describe a challenging situation you faced and how you resolved it.`,
             type: 'General',
             difficulty: 'easy',
-            expectedKeywords: ['experience', 'background', 'skills'],
-            order: 1
-        },
-        {
-            id: 'q2',
-            text: 'What are your main strengths as a professional?',
-            type: 'General',
-            difficulty: 'easy',
-            expectedKeywords: ['strength', 'quality', 'ability'],
-            order: 2
-        }
-    ];
+            expectedKeywords: ['experience', 'background', 'skills', 'challenge'],
+            order: i + 1
+        });
+    }
+    return genericQuestions;
 }
 
 // ============================================

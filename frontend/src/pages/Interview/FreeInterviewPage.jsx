@@ -6,6 +6,7 @@ import Navbar from "../../components/common/Navbar";
 import Loader from "../../components/common/Loader";
 import Feedback from "../../components/feedback/Feedback";
 import CancelModal from "../../components/common/DeleteModal";
+import PauseModal from "../../components/common/PauseModal";
 import QuestionDisplay from "../../components/interview/QuestionDisplay";
 import RecordingControls from "../../components/interview/RecordingControls";
 import NavigationButtons from "../../components/shared/NavigationButtons";
@@ -20,9 +21,10 @@ const FreeInterviewPage = () => {
   const [feedback, setFeedback] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showPauseModal, setShowPauseModal] = useState(false);
   const [interviewMeta, setInterviewMeta] = useState({});
   const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const [pollingAttempts, setPollingAttempts] = useState(0);
   const [isPendingQuestions, setIsPendingQuestions] = useState(false);
   const MAX_POLL_ATTEMPTS = 12; // ~1 minute if interval is 5s
@@ -55,7 +57,24 @@ const FreeInterviewPage = () => {
         const interviewData = response.data.interview || response.data;
 
         const fetchedQuestions = interviewData.questions || [];
+        console.log('📊 Fetched interview data:', { 
+          id: interviewData._id,
+          hasQuestions: !!fetchedQuestions.length,
+          questionCount: fetchedQuestions.length,
+          firstQuestionType: fetchedQuestions[0] ? typeof fetchedQuestions[0] : 'N/A',
+          status: interviewData.status
+        });
+        
         setQuestions(fetchedQuestions);
+        
+        // Restore paused state if exists
+        if (interviewData.pausedState) {
+          setCurrentQuestionIndex(interviewData.pausedState.currentQuestionIndex || 0);
+          setElapsedTime(interviewData.pausedState.elapsedTime || 0);
+          setAnswers(interviewData.pausedState.answers || {});
+          console.log(`Restored paused state: question ${interviewData.pausedState.currentQuestionIndex}, time ${interviewData.pausedState.elapsedTime}s`);
+        }
+        
         setInterviewMeta({
           type: interviewData.type || interviewData?.preferences?.interviewStyle || 'free',
           details: interviewData.details || '',
@@ -65,15 +84,10 @@ const FreeInterviewPage = () => {
         // If questions are not yet generated, enable pending state to start polling
         if (!fetchedQuestions.length) {
           setIsPendingQuestions(true);
-          // Ensure we are subscribed and request socket initialization so the backend can join the room and emit QUESTIONS_READY
-          try {
-            emit && emit('INITIALIZE_INTERVIEW', { interviewId });
-            console.log('Emitted INITIALIZE_INTERVIEW for interviewId:', interviewId);
-          } catch (e) {
-            console.warn('Failed to emit INITIALIZE_INTERVIEW:', e.message || e);
-          }
+          console.log('⚠️ No questions found in interview - questions may still be generating');
         } else {
           setIsPendingQuestions(false);
+          console.log(`✅ Loaded ${fetchedQuestions.length} existing questions from database`);
         }
       } catch (error) {
         console.error("Error fetching interview data:", error);
@@ -86,7 +100,7 @@ const FreeInterviewPage = () => {
 
     // (Polling handled in separate effect)
     return () => {};
-  }, [interviewId, emit]);
+  }, [interviewId]); // Removed emit dependency to prevent re-triggering
 
   // Polling effect: triggers when questions are pending
   useEffect(() => {
@@ -159,51 +173,14 @@ const FreeInterviewPage = () => {
     }));
   }, [transcript, currentQuestionIndex]);
 
-  // Timer: set timeLeft based on difficulty when question changes
-  const getTimeForDifficulty = (difficulty) => {
-    switch ((difficulty || 'basic').toLowerCase()) {
-      case 'basic':
-        return 45;
-      case 'intermediate':
-        return 60;
-      case 'advanced':
-        return 90;
-      default:
-        return 45;
-    }
-  };
-
+  // Overall session timer - tracks total time spent on interview page
   useEffect(() => {
-    // Reset timer when question changes
-    if (questions && questions.length > 0) {
-      setTimeLeft(getTimeForDifficulty(interviewMeta.difficulty));
-    }
-  }, [currentQuestionIndex, questions, interviewMeta.difficulty]);
-
-  // Countdown
-  useEffect(() => {
-    if (timeLeft === 0) return;
-
     const timer = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          // Auto-advance when time runs out
-          if (currentQuestionIndex < questions.length - 1) {
-            setCurrentQuestionIndex((i) => i + 1);
-            resetTranscript();
-            return 0;
-          } else {
-            // Last question timed out -> submit automatically
-            handleSubmitAnswers();
-            return 0;
-          }
-        }
-        return t - 1;
-      });
+      setElapsedTime((t) => t + 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, currentQuestionIndex, questions.length]);
+  }, []);
 
   const handleAnswerChange = (event) => {
     setAnswers({
@@ -261,6 +238,30 @@ const FreeInterviewPage = () => {
       window.location.href = "/";
     } catch (error) {
       console.error("Error canceling interview:", error);
+    }
+  };
+
+  const handlePauseInterview = async () => {
+    try {
+      // Save current state to DB
+      await axios.patch(
+        `${import.meta.env.VITE_BASE_URL}/api/interview/${interviewId}/pause`,
+        {
+          pausedState: {
+            currentQuestionIndex,
+            elapsedTime,
+            answers
+          }
+        },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      
+      console.log('Interview paused, state saved');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error("Error pausing interview:", error);
     }
   };
 
@@ -330,12 +331,20 @@ const FreeInterviewPage = () => {
       <Navbar />
       <h2 className="m-6 mt-28 text-4xl text-indigo-900 font-bold mb-4">Interview</h2>
       <div className="relative flex flex-col md:flex-row">
-        <button
-          onClick={() => setShowCancelModal(true)}
-          className="absolute top-4 md:-top-4 right-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
-        >
-          Cancel Interview
-        </button>
+        <div className="absolute top-4 md:-top-4 right-4 flex gap-2">
+          <button
+            onClick={() => setShowPauseModal(true)}
+            className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600"
+          >
+            Pause Interview
+          </button>
+          <button
+            onClick={() => setShowCancelModal(true)}
+            className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+          >
+            Cancel Interview
+          </button>
+        </div>
         <div className="bg-white p-6 rounded-lg shadow-md flex flex-col md:flex-row flex-grow">
           <div className="flex-1 md:w-2/3">
             <div className="flex items-center justify-between">
@@ -347,8 +356,10 @@ const FreeInterviewPage = () => {
                 onAnswerChange={handleAnswerChange}
               />
               <div className="ml-4 text-right">
-                <div className="text-sm text-gray-500">Time left</div>
-                <div className="text-2xl font-semibold text-indigo-700">{Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}</div>
+                <div className="text-sm text-gray-500">Total Time</div>
+                <div className="text-2xl font-semibold text-indigo-700">
+                  {Math.floor(elapsedTime / 60)}:{String(elapsedTime % 60).padStart(2, '0')}
+                </div>
               </div>
             </div>
             <div className="mt-4 flex flex-row md:flex-row justify-between">
@@ -376,6 +387,11 @@ const FreeInterviewPage = () => {
         show={showCancelModal}
         onClose={() => setShowCancelModal(false)}
         onConfirm={handleCancelInterview}
+      />
+      <PauseModal
+        show={showPauseModal}
+        onClose={() => setShowPauseModal(false)}
+        onConfirm={handlePauseInterview}
       />
     </div>
   );

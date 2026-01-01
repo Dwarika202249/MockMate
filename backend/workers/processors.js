@@ -4,22 +4,46 @@ const Interview = require('../models/InterviewSchema');
 
 // Process question generation jobs
 async function processQuestionGeneration(job) {
-    const { resumeText, role, numQuestions } = job.data;
+    const { resumeText, role, numQuestions, interviewId } = job.data;
     
     try {
+        console.log(`\n╔════════════════════════════════════════════════════════╗`);
+        console.log(`║       PROCESSING QUESTION GENERATION JOB ${job.id}      ║`);
+        console.log(`╚════════════════════════════════════════════════════════╝`);
+        console.log(`Interview ID: ${interviewId}`);
+        console.log(`Role: ${role}, NumQuestions: ${numQuestions}`);
+        
         const questions = await generateQuestionsWithFailover(resumeText, role, numQuestions);
         
+        console.log(`✅ Generated ${questions.length} questions`);
+        console.log(`First question type: ${typeof questions[0]}`);
+        
         // Update interview with generated questions
-        if (job.data.interviewId) {
-            await Interview.findByIdAndUpdate(job.data.interviewId, {
-                questions,
-                status: 'ready'
+        if (interviewId) {
+            // Use native MongoDB to avoid validation issues
+            const mongoose = require('mongoose');
+            const plainQuestions = JSON.parse(JSON.stringify(questions));
+            
+            const result = await Interview.collection.updateOne(
+                { _id: new mongoose.Types.ObjectId(interviewId) },
+                { 
+                    $set: { 
+                        questions: plainQuestions,
+                        status: 'active'
+                    } 
+                }
+            );
+            
+            console.log(`✅ Updated interview in DB:`, { 
+                acknowledged: result.acknowledged,
+                modifiedCount: result.modifiedCount 
             });
         }
         
         return questions;
     } catch (error) {
-        console.error('Error in question generation job:', error);
+        console.error('❌ Error in question generation job:', error.message);
+        console.error('Stack:', error.stack);
         throw error;
     }
 }

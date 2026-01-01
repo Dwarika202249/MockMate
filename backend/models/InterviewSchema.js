@@ -1,6 +1,15 @@
 const mongoose = require('mongoose');
 
 const interviewSchema = new mongoose.Schema({
+    type: {
+        type: String,
+        enum: ['free', 'resume'],
+        default: 'resume'
+    },
+    details: {
+        type: String,
+        // Used for free interviews to store context
+    },
     resume: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Resume'
@@ -13,7 +22,7 @@ const interviewSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['created', 'in-progress', 'active', 'completed'],
+        enum: ['created', 'in-progress', 'active', 'completed', 'cancelled', 'deleted'],
         default: 'created'
     },
     preferences: {
@@ -97,6 +106,11 @@ const interviewSchema = new mongoose.Schema({
         technicalScore: Number,
         communicationScore: Number,
         recommendedResources: [String]
+    },
+    pausedState: {
+        currentQuestionIndex: Number,
+        elapsedTime: Number,
+        answers: Object
     },
     startTime: Date,
     endTime: Date,
