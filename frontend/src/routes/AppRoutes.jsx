@@ -7,6 +7,7 @@ import { isAuthenticated } from "../utils/auth";
 
 import HomePage from "../pages/Home/HomePage";
 import About from "../pages/About/About";
+import PricingPage from "../pages/Pricing/PricingPage";
 import Login from "../components/auth/Login";
 import Register from "../components/auth/Register";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -39,6 +40,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<About />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route
           path="/login"
           element={<PublicRoute element={<Login />} restricted={true} />}

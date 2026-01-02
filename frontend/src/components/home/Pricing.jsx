@@ -1,142 +1,10 @@
-// import { motion } from "framer-motion";
-// import { FaUserGraduate, FaRocket, FaBuilding } from "react-icons/fa";
-
-// const pricingPlans = [
-//   {
-//     tier: "Free",
-//     price: "$0",
-//     frequency: "/mo",
-//     description: "Perfect for beginners testing the waters",
-//     features: [
-//       { label: "60 Mock Interviews per month", included: true },
-//       { label: "Basic AI feedback", included: true },
-//       { label: "Limited resume parsing", included: true },
-//       { label: "Progress Tracking", included: true },
-//       { label: "Email support", included: false },
-//       { label: "Analytics", included: false },
-//     ],
-//     button: "Get Started",
-//     highlight: false,
-//     icon: <FaUserGraduate className="text-3xl text-indigo-400 mx-auto mb-4" />,
-//   },
-//   {
-//     tier: "Pro",
-//     price: "$20",
-//     frequency: "/mo",
-//     description: "Most popular choice for active job seekers",
-//     features: [
-//       { label: "Unlimited Mock Interviews", included: true },
-//       { label: "Advanced AI feedback", included: true },
-//       { label: "Custom interview difficulty", included: true },
-//       { label: "Resume parsing + suggestions", included: true },
-//       { label: "Progress Tracking", included: true },
-//       { label: "Priority Support", included: false },
-//     ],
-//     button: "Get Started",
-//     highlight: true,
-//     tag: "Most popular plan",
-//     icon: <FaRocket className="text-3xl text-lime-400 mx-auto mb-4" />,
-//   },
-//   {
-//     tier: "Enterprise",
-//     price: "$79",
-//     frequency: "/mo",
-//     description: "Best for bootcamps and training cohorts",
-//     features: [
-//       { label: "All Basic & Pro features", included: true },
-//       { label: "Interview schedule features", included: true },
-//       { label: "Enterprise Dashboard", included: true },
-//       { label: "Interview Template Creation", included: true },
-//       { label: "Advanced integrations", included: true },
-//       { label: "Priority Support", included: true },
-//     ],
-//     button: "Get Started",
-//     highlight: false,
-//     icon: <FaBuilding className="text-3xl text-purple-400 mx-auto mb-4" />,
-//   },
-// ];
-
-// const Pricing = () => {
-//   return (
-//     <section id="pricing" className="text-white py-20 px-6 mt-96 relative bg-[#0e031a] text-center sm:px-8 lg:px-32 z-10 overflow-hidden">
-//       <h5 className="relative uppercase tracking-wide text-xs font-bold bg-indigo-900 text-white px-12 py-2 sm:mb-8 rounded-full inline-block overflow-hidden z-10">
-//         <span className="relative z-10">Pricing</span>
-//         <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent shine-glow" />
-//       </h5>
-//       <h2 className=" capitalize text-4xl font-bold text-center m-4">
-//         Flexible pricing for <span className="text-purple-500">every type of</span> jobseeker
-//       </h2>
-//       <p className="text-center text-indigo-200 mb-12 max-w-2xl mx-auto">
-//         Whether you're just starting out or prepping for FAANG, we've got a plan to elevate your interview game.
-//       </p>
-
-//       <div className="flex flex-col md:flex-row gap-6 justify-center items-center md:items-stretch">
-//         {pricingPlans.map((plan, index) => (
-//           <motion.div
-//             key={plan.tier}
-//             className={`relative rounded-2xl border border-indigo-800 bg-gradient-to-b from-[#151532] to-[#1c1c3f] p-8 w-full max-w-sm text-center shadow-xl transition-all duration-300 hover:scale-[1.03] ${
-//               plan.highlight ? "border-2 border-lime-400 shadow-lime-500/20 scale-105 z-10" : ""
-//             }`}
-//             initial={{ opacity: 0, y: 50 }}
-//             whileInView={{ opacity: 1, y: 0 }}
-//             transition={{ duration: 0.5, delay: index * 0.2 }}
-//             viewport={{ once: true }}
-//           >
-//             {plan.highlight && (
-//               <div className="absolute top-[-14px] left-1/2 -translate-x-1/2 bg-lime-500 text-black text-xs px-3 py-1 rounded-full uppercase font-semibold">
-//                 {plan.tag}
-//               </div>
-//             )}
-
-//             {/* Glowing Icon */}
-//             <div className="relative w-16 h-16 mx-auto mb-4">
-//               <div className="w-full h-full rounded-full bg-[#1f1f3a] flex items-center justify-center text-2xl text-lime-300 border-2 border-indigo-700 shadow-inner shadow-indigo-500/30">
-//                 <div className="mt-3">{plan.icon}</div>
-//               </div>
-//               <div className="absolute inset-0 rounded-full spin-slow border-t-2 border-indigo-400 border-opacity-30">
-//                 <div className="absolute -top-1 left-1/2 w-2 h-2 bg-white rounded-full blur-md -translate-x-1/2" />
-//               </div>
-//             </div>
-//             <h3 className="text-2xl font-bold mb-1">{plan.tier}</h3>
-//             <p className="text-indigo-300 mb-4 text-sm">{plan.description}</p>
-//             <div className="text-4xl font-extrabold mb-4">
-//               {plan.price}
-//               <span className="text-lg font-medium text-indigo-400">{plan.frequency}</span>
-//             </div>
-//             <ul className="text-sm text-left space-y-3 mb-6 text-indigo-100">
-//               {plan.features.map((feature, i) => (
-//                 <li key={i} className="flex items-center gap-2">
-//                   <span className={
-//                     feature.included
-//                       ? "text-lime-400"
-//                       : "text-red-500"
-//                   }>
-//                     {feature.included ? "✔" : "✖"}
-//                   </span>
-//                   {feature.label}
-//                 </li>
-//               ))}
-//             </ul>
-//             <button className="bg-indigo-600 hover:bg-indigo-500 transition-all text-white font-semibold py-2 px-6 rounded-full">
-//               {plan.button}
-//             </button>
-//           </motion.div>
-//         ))}
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default Pricing;
-
 import { motion } from "framer-motion";
-import { FaUserGraduate, FaRocket, FaBuilding } from "react-icons/fa";
+import { 
+  FaCheckCircle,
+  FaStar, 
+  FaGem
+} from "react-icons/fa";
 
-// Framer Motion variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 40 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-};
 
 const staggerContainer = {
   hidden: {},
@@ -147,60 +15,29 @@ const staggerContainer = {
   },
 };
 
-const pricingPlans = [
-  {
-    tier: "Free",
-    price: "$0",
-    frequency: "/mo",
-    description: "Perfect for beginners testing the waters",
-    features: [
-      { label: "60 Mock Interviews per month", included: true },
-      { label: "Basic AI feedback", included: true },
-      { label: "Limited resume parsing", included: true },
-      { label: "Progress Tracking", included: true },
-      { label: "Email support", included: false },
-      { label: "Analytics", included: false },
-    ],
-    button: "Get Started",
-    highlight: false,
-    icon: <FaUserGraduate className="text-3xl text-indigo-400 mx-auto mb-4" />,
-  },
-  {
-    tier: "Pro",
-    price: "$20",
-    frequency: "/mo",
-    description: "Most popular choice for active job seekers",
-    features: [
-      { label: "Unlimited Mock Interviews", included: true },
-      { label: "Advanced AI feedback", included: true },
-      { label: "Custom interview difficulty", included: true },
-      { label: "Resume parsing + suggestions", included: true },
-      { label: "Progress Tracking", included: true },
-      { label: "Priority Support", included: false },
-    ],
-    button: "Get Started",
-    highlight: true,
-    tag: "Most popular plan",
-    icon: <FaRocket className="text-3xl text-lime-400 mx-auto mb-4" />,
-  },
-  {
-    tier: "Enterprise",
-    price: "$79",
-    frequency: "/mo",
-    description: "Best for bootcamps and training cohorts",
-    features: [
-      { label: "All Basic & Pro features", included: true },
-      { label: "Interview schedule features", included: true },
-      { label: "Enterprise Dashboard", included: true },
-      { label: "Interview Template Creation", included: true },
-      { label: "Advanced integrations", included: true },
-      { label: "Priority Support", included: true },
-    ],
-    button: "Get Started",
-    highlight: false,
-    icon: <FaBuilding className="text-3xl text-purple-400 mx-auto mb-4" />,
-  },
-];
+const creditPackages = [
+    {
+      credits: 100,
+      price: 5,
+      popular: false,
+      savings: null,
+      features: ["100 AI Credits", "~5 Full Interviews", "Basic Support"]
+    },
+    {
+      credits: 250,
+      price: 10,
+      popular: true,
+      savings: "Save 17%",
+      features: ["250 AI Credits", "~12-15 Full Interviews", "Priority Support", "Advanced Analytics"]
+    },
+    {
+      credits: 500,
+      price: 18,
+      popular: false,
+      savings: "Save 30%",
+      features: ["500 AI Credits", "~25 Full Interviews", "Premium Support", "Unlimited Analytics", "Custom Interview Templates"]
+    }
+  ];
 
 const Pricing = () => {
   return (
@@ -212,87 +49,81 @@ const Pricing = () => {
       variants={staggerContainer}
       className="text-white py-20 px-6 mt-96 relative bg-[#0e031a] text-center sm:px-8 lg:px-32 z-10 overflow-hidden"
     >
-      <motion.h5
-        variants={fadeInUp}
-        className="relative uppercase tracking-wide text-xs font-bold bg-indigo-900 text-white px-12 py-2 sm:mb-8 rounded-full inline-block overflow-hidden z-10"
-      >
-        <span className="relative z-10">Pricing</span>
-        <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent shine-glow" />
-      </motion.h5>
 
-      <motion.h2
-        variants={fadeInUp}
-        className="capitalize text-4xl font-bold text-center m-4"
-      >
-        Flexible pricing for{" "}
-        <span className="text-purple-500">every type of</span> jobseeker
-      </motion.h2>
-
-      <motion.p
-        variants={fadeInUp}
-        className="text-center text-indigo-200 mb-12 max-w-2xl mx-auto"
-      >
-        Whether you're just starting out or prepping for FAANG, we've got a plan
-        to elevate your interview game.
-      </motion.p>
-
-      <div className="flex flex-col md:flex-row gap-6 justify-center items-center md:items-stretch">
-        {pricingPlans.map((plan, index) => (
-          <motion.div
-            key={plan.tier}
-            className={`relative rounded-2xl border border-indigo-800 bg-gradient-to-b from-[#151532] to-[#1c1c3f] p-8 w-full max-w-sm text-center shadow-xl transition-all duration-300 hover:scale-[1.03] ${
-              plan.highlight
-                ? "border-2 border-lime-400 shadow-lime-500/20 scale-105 z-10"
-                : ""
-            }`}
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.2 }}
-            viewport={{ once: true }}
-          >
-            {plan.highlight && (
-              <div className="absolute top-[-14px] left-1/2 -translate-x-1/2 bg-lime-500 text-black text-xs px-3 py-1 rounded-full uppercase font-semibold">
-                {plan.tag}
-              </div>
-            )}
-
-            {/* Glowing Icon */}
-            <div className="relative w-16 h-16 mx-auto mb-4">
-              <div className="w-full h-full rounded-full bg-[#1f1f3a] flex items-center justify-center text-2xl text-lime-300 border-2 border-indigo-700 shadow-inner shadow-indigo-500/30">
-                <div className="mt-3">{plan.icon}</div>
-              </div>
-              <div className="absolute inset-0 rounded-full spin-slow border-t-2 border-indigo-400 border-opacity-30">
-                <div className="absolute -top-1 left-1/2 w-2 h-2 bg-white rounded-full blur-md -translate-x-1/2" />
-              </div>
-            </div>
-            <h3 className="text-2xl font-bold mb-1">{plan.tier}</h3>
-            <p className="text-indigo-300 mb-4 text-sm">{plan.description}</p>
-            <div className="text-4xl font-extrabold mb-4">
-              {plan.price}
-              <span className="text-lg font-medium text-indigo-400">
-                {plan.frequency}
-              </span>
-            </div>
-            <ul className="text-sm text-left space-y-3 mb-6 text-indigo-100">
-              {plan.features.map((feature, i) => (
-                <li key={i} className="flex items-center gap-2">
-                  <span
-                    className={
-                      feature.included ? "text-lime-400" : "text-red-500"
-                    }
+      <section className="py-20 px-6">
+                <div className="max-w-7xl mx-auto">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="text-center mb-16"
                   >
-                    {feature.included ? "✔" : "✖"}
-                  </span>
-                  {feature.label}
-                </li>
-              ))}
-            </ul>
-            <button className="bg-indigo-600 hover:bg-indigo-500 transition-all text-white font-semibold py-2 px-6 rounded-full">
-              {plan.button}
-            </button>
-          </motion.div>
-        ))}
-      </div>
+                    <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                      Purchase <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">AI Credits</span>
+                    </h2>
+                    <p className="text-gray-300 text-lg">Choose the package that fits your interview preparation needs</p>
+                  </motion.div>
+      
+                  <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    {creditPackages.map((pkg, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                        className={`relative bg-gradient-to-b from-gray-800/50 to-gray-900/50 backdrop-blur-md rounded-3xl p-8 border transition-all duration-300 hover:scale-105 ${
+                          pkg.popular
+                            ? 'border-purple-500/50 shadow-2xl shadow-purple-500/20'
+                            : 'border-white/10 hover:border-purple-500/30'
+                        }`}
+                      >
+                        {pkg.popular && (
+                          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
+                            <FaStar /> Most Popular
+                          </div>
+                        )}
+      
+                        {pkg.savings && (
+                          <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                            {pkg.savings}
+                          </div>
+                        )}
+      
+                        <div className="text-center mb-6">
+                          <div className="text-purple-400 mb-4">
+                            <FaGem className="text-5xl mx-auto" />
+                          </div>
+                          <div className="text-6xl font-bold mb-2">{pkg.credits}</div>
+                          <div className="text-gray-400 mb-4">AI Credits</div>
+                          <div className="text-4xl font-bold text-purple-400">
+                            ${pkg.price}
+                          </div>
+                        </div>
+      
+                        <ul className="space-y-3 mb-8">
+                          {pkg.features.map((feature, i) => (
+                            <li key={i} className="flex items-center gap-3 text-gray-300">
+                              <FaCheckCircle className="text-green-400 flex-shrink-0" />
+                              <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+      
+                        <button
+                          className={`w-full py-4 rounded-full font-semibold transition-all duration-300 ${
+                            pkg.popular
+                              ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-purple-500/50'
+                              : 'bg-white/10 hover:bg-white/20 border border-white/20 hover:border-purple-500/50'
+                          }`}
+                        >
+                          Purchase Now
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </section>
     </motion.section>
   );
 };

@@ -94,14 +94,19 @@ const Navbar = () => {
             }`} />
           </Link>
           <Link
-            to="/"
-            onClick={(e) => {
-              scrollToPricing(e);
-            }}
-            className="text-gray-100 hover:text-white relative group px-3 py-2 transition-colors duration-300"
+            to="/pricing"
+            className={`relative group px-3 py-2 transition-colors duration-300 ${
+              location.pathname === '/pricing' 
+                ? 'text-white' 
+                : 'text-gray-100 hover:text-white'
+            }`}
           >
             <span className="relative z-10">Pricing</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+            <div className={`absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg transition-opacity duration-300 ${
+              location.pathname === '/pricing' 
+                ? 'opacity-20 animate-pulse' 
+                : 'opacity-0 group-hover:opacity-10'
+            }`} />
           </Link>
           <Link 
             to="/about" 
@@ -237,15 +242,18 @@ const Navbar = () => {
           </Link>
           
           <Link
-            to="/"
-            onClick={(e) => {
-              setIsOpen(false);
-              scrollToPricing(e);
-            }}
-            className="flex items-center mb-4 text-xl font-bold bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 group"
+            to="/pricing"
+            onClick={() => setIsOpen(false)}
+            className={`flex items-center mb-4 text-xl font-bold backdrop-blur-md rounded-xl p-4 border transition-all duration-300 group ${
+              location.pathname === '/pricing'
+                ? 'bg-white/15 border-pink-500/50 animate-pulse'
+                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/30'
+            }`}
           >
             <FaTags className="mr-3 text-pink-400 group-hover:scale-110 transition-transform duration-300" size={24} />
-            <span className="group-hover:text-pink-400 transition-colors duration-300">Pricing</span>
+            <span className={`transition-colors duration-300 ${
+              location.pathname === '/pricing' ? 'text-pink-400' : 'group-hover:text-pink-400'
+            }`}>Pricing</span>
           </Link>
 
           {loggedIn ? (
