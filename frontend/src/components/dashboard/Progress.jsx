@@ -8,15 +8,48 @@ import toast from "react-hot-toast";
 const Progress = () => {
   const navigate = useNavigate();
   const [interviews, setInterviews] = useState([]);
-  const [skillData, setSkillData] = useState([
-    { skill: "React", score: 85 },
-    { skill: "JavaScript", score: 75 },
-    { skill: "Redux", score: 60 },
-    { skill: "CSS/Tailwind", score: 80 },
-    { skill: "Node.js", score: 70 },
-  ]);
+  const [skillData, setSkillData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Comprehensive skill patterns for extraction
+  const SKILL_PATTERNS = {
+    languages: ['javascript', 'typescript', 'python', 'java', 'c', 'c++', 'cpp', 'c#', 'csharp', 'go', 'golang', 'rust', 'ruby', 'php', 'swift', 'kotlin', 'scala', 'perl', 'r', 'matlab', 'dart', 'elixir', 'haskell', 'lua', 'shell', 'bash', 'powershell'],
+    frontend: ['react', 'vue', 'angular', 'javascript', 'typescript', 'jsx', 'tsx', 'css', 'html', 'sass', 'tailwind', 'bootstrap', 'nextjs', 'next.js'],
+    backend: ['node', 'nodejs', 'node.js', 'express', 'django', 'flask', 'fastapi', 'spring', 'nestjs', 'nest.js'],
+    api: ['api', 'rest', 'restful', 'graphql', 'grpc', 'websocket', 'http'],
+    database: ['mongodb', 'sql', 'postgres', 'postgresql', 'mysql', 'redis', 'dynamodb', 'cassandra', 'database'],
+    tools: ['git', 'github', 'docker', 'kubernetes', 'k8s', 'jenkins', 'ci/cd', 'aws', 'azure', 'gcp'],
+    concepts: ['async', 'promise', 'callback', 'closure', 'oop', 'functional', 'algorithm', 'data structure', 'design pattern'],
+    testing: ['jest', 'mocha', 'chai', 'testing', 'unit test', 'integration test', 'e2e', 'tdd'],
+    state: ['redux', 'mobx', 'zustand', 'context', 'state management'],
+  };
+
+  // Smart skill extraction function
+  const extractSkillsFromText = (text, score = 0) => {
+    if (!text || typeof text !== 'string') return {};
+    
+    const skills = {};
+    const lowerText = text.toLowerCase();
+    
+    // Flatten all patterns and search
+    Object.values(SKILL_PATTERNS).flat().forEach(pattern => {
+      // Escape special regex characters
+      const escapedPattern = pattern.replace(/[+*?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escapedPattern}\\b`, 'gi');
+      if (regex.test(lowerText)) {
+        // Normalize skill name
+        const normalized = pattern
+          .split(/[.\s-]/)
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+        
+        skills[normalized] = score;
+      }
+    });
+    
+    return skills;
+  };
 
   // Fetch interview history on component mount
   useEffect(() => {
@@ -50,70 +83,141 @@ const Progress = () => {
 
           setInterviews(transformedInterviews);
 
-          // Extract skill scores from both free and resume interviews
+          // HYBRID APPROACH: Extract skills from multiple sources
           if (data.interviews.length > 0) {
-            const skillMap = {};
+            const skillMap = {}; // { skillName: { totalScore: number, count: number } }
             
             data.interviews.forEach((interview) => {
-              // For free interviews - use perQuestionFeedback
-              if (interview.summary?.perQuestionFeedback && Array.isArray(interview.summary.perQuestionFeedback)) {
-                interview.summary.perQuestionFeedback.forEach((feedback) => {
-                  // Extract keywords from strengths and improvements
-                  const allKeywords = [
-                    ...(feedback.strengths || []),
-                    ...(feedback.improvements || [])
-                  ];
-                  
-                  allKeywords.forEach((keyword) => {
-                    // Extract actual skill words (simplified)
-                    const words = keyword.toLowerCase().match(/\b(react|javascript|node|redux|css|tailwind|api|rest|graphql|typescript|python|sql|mongodb)\b/gi);
-                    if (words) {
-                      words.forEach((word) => {
-                        const normalizedWord = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-                        skillMap[normalizedWord] = (skillMap[normalizedWord] || 0) + (feedback.score || 0);
+              // SOURCE 1: Summary fields (resume interviews - if available)
+              if (interview.summary) {
+                // Check keyStrengths (preferred for resume interviews)
+                if (Array.isArray(interview.summary.keyStrengths) && interview.summary.keyStrengths.length > 0) {
+                  interview.summary.keyStrengths.forEach((strength) => {
+                    const extractedSkills = extractSkillsFromText(strength, 85); // High score for strengths
+                    Object.entries(extractedSkills).forEach(([skill, score]) => {
+                      if (!skillMap[skill]) {
+                        skillMap[skill] = { totalScore: 0, count: 0 };
+                      }
+                      skillMap[skill].totalScore += score;
+                      skillMap[skill].count += 1;
+                    });
+                  });
+                }
+                
+                // Check areasToImprove (need focus)
+                if (Array.isArray(interview.summary.areasToImprove) && interview.summary.areasToImprove.length > 0) {
+                  interview.summary.areasToImprove.forEach((area) => {
+                    const extractedSkills = extractSkillsFromText(area, 50); // Lower score for improvement areas
+                    Object.entries(extractedSkills).forEach(([skill, score]) => {
+                      if (!skillMap[skill]) {
+                        skillMap[skill] = { totalScore: 0, count: 0 };
+                      }
+                      skillMap[skill].totalScore += score;
+                      skillMap[skill].count += 1;
+                    });
+                  });
+                }
+
+                // Check perQuestionFeedback (free interviews)
+                if (Array.isArray(interview.summary.perQuestionFeedback)) {
+                  interview.summary.perQuestionFeedback.forEach((feedback) => {
+                    const score = feedback.score || 0;
+                    
+                    // Extract from strengths
+                    if (Array.isArray(feedback.strengths)) {
+                      feedback.strengths.forEach((strength) => {
+                        const extractedSkills = extractSkillsFromText(strength, score);
+                        Object.entries(extractedSkills).forEach(([skill, _]) => {
+                          if (!skillMap[skill]) {
+                            skillMap[skill] = { totalScore: 0, count: 0 };
+                          }
+                          skillMap[skill].totalScore += score;
+                          skillMap[skill].count += 1;
+                        });
+                      });
+                    }
+                    
+                    // Extract from improvements
+                    if (Array.isArray(feedback.improvements)) {
+                      feedback.improvements.forEach((improvement) => {
+                        const extractedSkills = extractSkillsFromText(improvement, Math.max(score - 20, 40));
+                        Object.entries(extractedSkills).forEach(([skill, _]) => {
+                          if (!skillMap[skill]) {
+                            skillMap[skill] = { totalScore: 0, count: 0 };
+                          }
+                          skillMap[skill].totalScore += Math.max(score - 20, 40);
+                          skillMap[skill].count += 1;
+                        });
                       });
                     }
                   });
-                });
+                }
               }
               
-              // For resume interviews - use answers array
-              if (interview.answers && Array.isArray(interview.answers)) {
+              // SOURCE 2: Answers feedback (fallback & additional data)
+              if (Array.isArray(interview.answers)) {
                 interview.answers.forEach((answer) => {
                   if (answer.feedback) {
-                    // Check for keywords array
+                    const score = answer.feedback.score || 0;
+                    
+                    // Direct keywords (highest priority)
                     if (Array.isArray(answer.feedback.keywords)) {
                       answer.feedback.keywords.forEach((keyword) => {
-                        skillMap[keyword] = (skillMap[keyword] || 0) + (answer.feedback.score || 0);
+                        const normalized = keyword.charAt(0).toUpperCase() + keyword.slice(1).toLowerCase();
+                        if (!skillMap[normalized]) {
+                          skillMap[normalized] = { totalScore: 0, count: 0 };
+                        }
+                        skillMap[normalized].totalScore += score;
+                        skillMap[normalized].count += 1;
                       });
                     }
-                    // Also check strengths/improvements
-                    const allKeywords = [
-                      ...(answer.feedback.strengths || []),
-                      ...(answer.feedback.improvements || [])
-                    ];
-                    allKeywords.forEach((keyword) => {
-                      const words = keyword.toLowerCase().match(/\b(react|javascript|node|redux|css|tailwind|api|rest|graphql|typescript|python|sql|mongodb)\b/gi);
-                      if (words) {
-                        words.forEach((word) => {
-                          const normalizedWord = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-                          skillMap[normalizedWord] = (skillMap[normalizedWord] || 0) + (answer.feedback.score || 0);
+                    
+                    // Extract from strengths text
+                    if (Array.isArray(answer.feedback.strengths)) {
+                      answer.feedback.strengths.forEach((strength) => {
+                        const extractedSkills = extractSkillsFromText(strength, score);
+                        Object.entries(extractedSkills).forEach(([skill, _]) => {
+                          if (!skillMap[skill]) {
+                            skillMap[skill] = { totalScore: 0, count: 0 };
+                          }
+                          skillMap[skill].totalScore += score;
+                          skillMap[skill].count += 1;
                         });
-                      }
-                    });
+                      });
+                    }
+                    
+                    // Extract from improvements text
+                    if (Array.isArray(answer.feedback.improvements)) {
+                      answer.feedback.improvements.forEach((improvement) => {
+                        const extractedSkills = extractSkillsFromText(improvement, Math.max(score - 15, 45));
+                        Object.entries(extractedSkills).forEach(([skill, _]) => {
+                          if (!skillMap[skill]) {
+                            skillMap[skill] = { totalScore: 0, count: 0 };
+                          }
+                          skillMap[skill].totalScore += Math.max(score - 15, 45);
+                          skillMap[skill].count += 1;
+                        });
+                      });
+                    }
                   }
                 });
               }
             });
 
-            // Convert to skill scores (top 5)
+            // Calculate final averaged scores
             const calculatedSkills = Object.entries(skillMap)
-              .map(([skill, totalScore]) => ({
+              .map(([skill, data]) => ({
                 skill,
-                score: Math.min(100, Math.round(totalScore / data.interviews.length)),
+                score: Math.min(100, Math.round(data.totalScore / data.count)),
+                mentions: data.count, // For debugging/confidence
               }))
-              .sort((a, b) => b.score - a.score)
-              .slice(0, 5);
+              .filter(skill => skill.score > 0) // Remove zero scores
+              .sort((a, b) => {
+                // Sort by score first, then by mentions (confidence)
+                if (b.score !== a.score) return b.score - a.score;
+                return b.mentions - a.mentions;
+              })
+              .slice(0, 5); // Top 5 skills
 
             if (calculatedSkills.length > 0) {
               setSkillData(calculatedSkills);
@@ -403,31 +507,42 @@ const Progress = () => {
 
           {/* Bar Chart */}
           <div className="mt-3 sm:mt-4 md:mt-6 overflow-x-auto">
-            <div className="min-w-[280px]">
-              <SkillChart skills={skillData} />
-            </div>
+            {skillData.length > 0 ? (
+              <div className="min-w-[280px]">
+                <SkillChart skills={skillData} />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg">
+                <div className="text-center">
+                  <p className="text-gray-500 text-sm font-medium">No skill data available yet</p>
+                  <p className="text-gray-400 text-xs mt-1">Complete more interviews with detailed feedback</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Skill Insights */}
-          <div className="mt-3 sm:mt-4 md:mt-6 pt-3 sm:pt-4 md:pt-6 border-t border-gray-200">
-            <h3 className="text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3">
-              Top Strengths & Focus Areas
-            </h3>
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
-              <div className="p-2 sm:p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-[10px] sm:text-xs text-green-700 font-semibold">
-                  🎯 Strongest
-                </p>
-                <p className="text-xs sm:text-sm font-bold text-gray-800">{skillData[0]?.skill} ({skillData[0]?.score})</p>
-              </div>
-              <div className="p-2 sm:p-3 bg-orange-50 rounded-lg border border-orange-200">
-                <p className="text-[10px] sm:text-xs text-orange-700 font-semibold">
-                  📈 Needs Focus
-                </p>
-                <p className="text-xs sm:text-sm font-bold text-gray-800">{skillData[skillData.length - 1]?.skill} ({skillData[skillData.length - 1]?.score})</p>
+          {skillData.length > 0 && (
+            <div className="mt-3 sm:mt-4 md:mt-6 pt-3 sm:pt-4 md:pt-6 border-t border-gray-200">
+              <h3 className="text-xs sm:text-sm font-bold text-gray-700 mb-2 sm:mb-3">
+                Top Strengths & Focus Areas
+              </h3>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+                <div className="p-2 sm:p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-[10px] sm:text-xs text-green-700 font-semibold">
+                    🎯 Strongest
+                  </p>
+                  <p className="text-xs sm:text-sm font-bold text-gray-800">{skillData[0]?.skill} ({skillData[0]?.score})</p>
+                </div>
+                <div className="p-2 sm:p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-[10px] sm:text-xs text-orange-700 font-semibold">
+                    📈 Needs Focus
+                  </p>
+                  <p className="text-xs sm:text-sm font-bold text-gray-800">{skillData[skillData.length - 1]?.skill} ({skillData[skillData.length - 1]?.score})</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
