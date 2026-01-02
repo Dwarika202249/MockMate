@@ -8,6 +8,8 @@ import { isAuthenticated } from "../utils/auth";
 import HomePage from "../pages/Home/HomePage";
 import About from "../pages/About/About";
 import PricingPage from "../pages/Pricing/PricingPage";
+import TermsPage from "../pages/Legal/TermsPage";
+import PrivacyPage from "../pages/Legal/PrivacyPage";
 import Login from "../components/auth/Login";
 import Register from "../components/auth/Register";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -41,6 +43,8 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<About />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route
           path="/login"
           element={<PublicRoute element={<Login />} restricted={true} />}

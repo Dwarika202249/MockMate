@@ -27,7 +27,23 @@ const UserSchema = new mongoose.Schema({
   lowCreditNotificationSent: {
     type: Boolean,
     default: false
+  },
+  // Session management
+  refreshToken: {
+    type: String,
+    default: null
+  },
+  refreshTokenExpiry: {
+    type: Date,
+    default: null
+  },
+  lastLoginAt: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true });
+
+// Index for faster refresh token lookup
+UserSchema.index({ refreshToken: 1, refreshTokenExpiry: 1 });
 
 module.exports = mongoose.model("User", UserSchema);

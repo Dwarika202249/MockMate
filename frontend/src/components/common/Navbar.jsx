@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { isAuthenticated } from "../../utils/auth";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutUser, selectIsAuthenticated } from "../../redux/slices/authSlice";
 import { HiMenu, HiX } from "react-icons/hi";
 import { RiDashboardFill } from "react-icons/ri";
 import { IoHome } from "react-icons/io5";
@@ -11,20 +12,20 @@ import ProfileMenu from "./ProfileMenu";
 import CreditsBadge from "./CreditsBadge";
 
 const Navbar = () => {
-  const [loggedIn, setLoggedIn] = useState(isAuthenticated());
+  const dispatch = useDispatch();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const [loggedIn, setLoggedIn] = useState(isAuthenticated);
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Sync local state with Redux state
   useEffect(() => {
-    const checkAuthStatus = () => setLoggedIn(isAuthenticated());
-    window.addEventListener("storage", checkAuthStatus);
-    return () => window.removeEventListener("storage", checkAuthStatus);
-  }, []);
+    setLoggedIn(isAuthenticated);
+  }, [isAuthenticated]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setLoggedIn(false);
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
     setIsOpen(false);
     navigate("/");
   };

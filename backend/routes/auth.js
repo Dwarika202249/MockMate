@@ -1,12 +1,37 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
 const router = express.Router();
 const userAuth = require("../middleware/userAuth")
 
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// Token configuration - shorter expiry for security
+const ACCESS_TOKEN_EXPIRY = '1h';  // 1 hour (was 100 hours!)
+const REFRESH_TOKEN_EXPIRY_DAYS = 7; // 7 days
+const REFRESH_TOKEN_EXPIRY_MS = REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+
+// Generate access token
+const generateAccessToken = (userId) => {
+  return jwt.sign(
+    { user: { id: userId } },
+    process.env.JWT_SECRET,
+    { expiresIn: ACCESS_TOKEN_EXPIRY }
+  );
+};
+
+// Generate refresh token
+const generateRefreshToken = () => {
+  return crypto.randomBytes(64).toString('hex');
+};
+
+// Get refresh token expiry date
+const getRefreshTokenExpiry = () => {
+  return new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
+};
 
 router.post('/google', async (req, res) => {
     const { id_token } = req.body;
@@ -30,11 +55,19 @@ router.post('/google', async (req, res) => {
         await user.save();
       }
   
-      const token = jwt.sign({ user: { id: user.id } }, process.env.JWT_SECRET, {
-        expiresIn: 360000,
-      });
+      const token = generateAccessToken(user.id);
+      const refreshToken = generateRefreshToken();
+      
+      // Store refresh token with expiry
+      user.refreshToken = refreshToken;
+      user.refreshTokenExpiry = getRefreshTokenExpiry();
+      await user.save();
   
-      res.json({ token });
+      res.json({ 
+        token, 
+        refreshToken,
+        user: { id: user.id, name: user.name, email: user.email, photoURL: user.photoURL }
+      });
     } catch (error) {
       console.error(error.message);
       res.status(500).send('Internal Server Error');
@@ -57,15 +90,19 @@ router.post('/register', async (req, res) => {
         const salt = await bcrypt.genSalt();
         user.password = await bcrypt.hash(password, salt);
         
+        // Generate refresh token
+        const refreshToken = generateRefreshToken();
+        user.refreshToken = refreshToken;
+        user.refreshTokenExpiry = getRefreshTokenExpiry();
+        
         await user.save(); //user save to mongodb
 
-        // jwt
-        const payload = {user: { id: user.id}}
-        jwt.sign(payload, process.env.JWT_SECRET, {
-            expiresIn: 360000
-        }, (error, token) => {
-            if (error) throw error;
-            res.json({token});
+        const token = generateAccessToken(user.id);
+        
+        res.json({ 
+          token, 
+          refreshToken,
+          user: { id: user.id, name: user.name, email: user.email }
         });
     } catch (error) {
         console.error(error.message);
@@ -90,15 +127,20 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({msg: "Invalid Credentials."}); 
         }
 
-        // return JWT token
-        const payload = {user:{id: user.id}};
-        jwt.sign(payload, process.env.JWT_SECRET, {
-            expiresIn: 360000
-        }, (error, token) => {
-            if(error) throw error;
-            res.json({token})
-        })
+        // Generate tokens
+        const token = generateAccessToken(user.id);
+        const refreshToken = generateRefreshToken();
+        
+        // Store refresh token
+        user.refreshToken = refreshToken;
+        user.refreshTokenExpiry = getRefreshTokenExpiry();
+        await user.save();
 
+        res.json({ 
+          token, 
+          refreshToken,
+          user: { id: user.id, name: user.name, email: user.email, photoURL: user.photoURL }
+        });
 
     } catch (error) {
         console.error(error.message);
@@ -106,6 +148,56 @@ router.post('/login', async (req, res) => {
         
     }
 })
+
+// Refresh token endpoint
+router.post('/refresh', async (req, res) => {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+        return res.status(400).json({ msg: 'Refresh token required' });
+    }
+    
+    try {
+        const user = await User.findOne({ 
+            refreshToken,
+            refreshTokenExpiry: { $gt: new Date() }
+        });
+        
+        if (!user) {
+            return res.status(401).json({ msg: 'Invalid or expired refresh token' });
+        }
+        
+        // Generate new tokens
+        const newToken = generateAccessToken(user.id);
+        const newRefreshToken = generateRefreshToken();
+        
+        // Update refresh token
+        user.refreshToken = newRefreshToken;
+        user.refreshTokenExpiry = getRefreshTokenExpiry();
+        await user.save();
+        
+        res.json({ token: newToken, refreshToken: newRefreshToken });
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// Logout endpoint - invalidate refresh token
+router.post('/logout', userAuth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (user) {
+            user.refreshToken = null;
+            user.refreshTokenExpiry = null;
+            await user.save();
+        }
+        res.json({ msg: 'Logged out successfully' });
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 router.get('/user', userAuth, async (req, res) => {
   try {
