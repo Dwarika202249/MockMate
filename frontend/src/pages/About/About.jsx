@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Footer from "../../components/common/Footer";
 import Navbar from "../../components/common/Navbar";
 import { Link } from "react-router-dom";
@@ -28,10 +28,34 @@ const About = () => {
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
 
+  const [activeUsers, setActiveUsers] = useState(null);
+  const [interviewsConducted, setInterviewsConducted] = useState(null);
+
+  // Fetch public stats (active user count, interviews conducted)
+  useEffect(() => {
+    let mounted = true;
+    import('../../services/InterviewService').then(({ default: InterviewService }) => {
+      InterviewService.getPublicStats()
+        .then((res) => {
+          if (!mounted) return;
+          if (res && res.status === 'success' && res.data) {
+            setActiveUsers(res.data.activeUsers ?? null);
+            setInterviewsConducted(res.data.interviewsConducted ?? null);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load public stats', err);
+        });
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const stats = [
-    { icon: FaUsers, value: "50K+", label: "Active Users", color: "from-blue-400 to-cyan-400" },
+    { icon: FaUsers, value: activeUsers !== null ? activeUsers.toLocaleString() : "—", label: "Active Users", color: "from-blue-400 to-cyan-400" },
     { icon: FaChartLine, value: "95%", label: "Success Rate", color: "from-purple-400 to-pink-400" },
-    { icon: FaRocket, value: "1M+", label: "Interviews Conducted", color: "from-orange-400 to-red-400" },
+    { icon: FaRocket, value: interviewsConducted !== null ? interviewsConducted.toLocaleString() : "—", label: "Interviews Conducted", color: "from-orange-400 to-red-400" },
     { icon: FaStar, value: "4.9/5", label: "User Rating", color: "from-yellow-400 to-amber-400" }
   ];
 
@@ -111,7 +135,7 @@ const About = () => {
   return (
     <>
       <Navbar />
-      <div ref={containerRef} className="mt-16 min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 overflow-x-hidden">
+      <div ref={containerRef} className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 overflow-x-hidden">
         
         {/* Animated Background Elements */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -156,7 +180,7 @@ const About = () => {
                   ]
                 }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="inline-block p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl backdrop-blur-sm mb-6"
+                className="inline-block p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl backdrop-blur-sm my-8"
               >
                 <FaBrain className="text-6xl text-purple-400" />
               </motion.div>

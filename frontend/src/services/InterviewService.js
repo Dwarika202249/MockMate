@@ -51,6 +51,15 @@ class InterviewService {
         }
     }
 
+    static async getPublicStats() {
+        try {
+            const response = await axios.get(`${API_URL}/interview/stats`);
+            return response.data;
+        } catch (error) {
+            throw this.handleError(error);
+        }
+    }
+
     static handleError(error) {
         if (error.response) {
             // Server responded with error

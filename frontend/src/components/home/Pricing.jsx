@@ -41,16 +41,19 @@ const creditPackages = [
 
 const Pricing = () => {
   return (
-    <motion.section
-      id="pricing"
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true }}
-      variants={staggerContainer}
-      className="text-white py-20 px-6 mt-96 relative bg-[#0e031a] text-center sm:px-8 lg:px-32 z-10 overflow-hidden"
+    <section
+      className="relative text-white py-20 px-6 bg-gradient-to-br from-[#0a0118] via-[#1a0b2e] to-[#0f0520] text-center sm:px-8 lg:px-32 z-10 overflow-hidden"
     >
+      {/* Animated Background Orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 -left-20 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-20 -right-20 w-[400px] h-[400px] bg-indigo-600/20 rounded-full blur-[100px] animate-pulse" />
+      </div>
 
-      <section className="py-20 px-6">
+      {/* Grid Pattern Overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none" />
+
+      <section className="py-20 px-6 relative z-10">
                 <div className="max-w-7xl mx-auto">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -72,10 +75,10 @@ const Pricing = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: index * 0.1 }}
-                        className={`relative bg-gradient-to-b from-gray-800/50 to-gray-900/50 backdrop-blur-md rounded-3xl p-8 border transition-all duration-300 hover:scale-105 ${
+                        className={`relative bg-white/5 backdrop-blur-xl rounded-3xl p-8 border transition-all duration-300 hover:scale-105 ${
                           pkg.popular
-                            ? 'border-purple-500/50 shadow-2xl shadow-purple-500/20'
-                            : 'border-white/10 hover:border-purple-500/30'
+                            ? 'border-purple-500/50 shadow-[0_8px_32px_rgba(168,85,247,0.3)]'
+                            : 'border-purple-500/20 hover:border-purple-500/40 shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
                         }`}
                       >
                         {pkg.popular && (
@@ -124,7 +127,7 @@ const Pricing = () => {
                   </div>
                 </div>
               </section>
-    </motion.section>
+    </section>
   );
 };
 

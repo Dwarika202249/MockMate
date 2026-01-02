@@ -1,6 +1,7 @@
 const Interview = require('../models/InterviewSchema');
 const Resume = require('../models/ResumeSchema');
 const FeedbackSummary = require('../models/FeedbackSchema');
+const User = require('../models/User');
 const { generateQuestionsWithFailover, evaluateAnswerWithFailover, generateSummaryWithFailover } = require('../utils/aiProvider');
 const { queues } = require('../config/queue');
 
@@ -378,6 +379,22 @@ exports.getInterviewHistory = async (req, res) => {
   } catch (error) {
     console.error('Error fetching history:', error);
     res.status(500).json({ message: 'Failed to fetch history' });
+  }
+};
+
+// Public stats (active users, interviews conducted)
+exports.getPublicStats = async (req, res) => {
+  try {
+    // Count of registered users
+    const activeUsers = await User.countDocuments();
+
+    // Count of finished interviews
+    const interviewsConducted = await Interview.countDocuments({ status: 'completed' });
+
+    res.json({ status: 'success', data: { activeUsers, interviewsConducted } });
+  } catch (error) {
+    console.error('Error fetching public stats:', error);
+    res.status(500).json({ message: 'Failed to fetch stats' });
   }
 };
 

@@ -48,12 +48,12 @@ const FAQs = () => {
   };
 
   return (
-    <section className="relative min-h-screen bg-gradient-to-br from-[#0a0118] via-[#1a0b2e] to-[#0f0520] px-6 py-24 overflow-hidden">
+    <section className="relative min-h-screen bg-gradient-to-br from-[#0d0219] via-[#12071f] to-[#0a0118] px-6 py-24 overflow-hidden">
       {/* Animated Background Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -left-20 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-20 -right-20 w-[400px] h-[400px] bg-indigo-600/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute top-1/2 left-1/2 w-[350px] h-[350px] bg-pink-600/10 rounded-full blur-[90px]" />
+        <div className="absolute top-20 -left-20 w-[500px] h-[500px] bg-indigo-600/15 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-20 -right-20 w-[400px] h-[400px] bg-purple-600/15 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute top-1/2 left-1/2 w-[350px] h-[350px] bg-blue-600/10 rounded-full blur-[90px]" />
       </div>
 
       {/* Grid Pattern Overlay */}

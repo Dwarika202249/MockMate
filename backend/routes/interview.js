@@ -13,6 +13,9 @@ router.post("/", userAuth, interviewController.createInterview);
 // Get interview history (GET /api/interview/history)
 router.get("/history", userAuth, interviewController.getInterviewHistory);
 
+// Public stats (GET /api/interview/stats)
+router.get("/stats", interviewController.getPublicStats);
+
 // Submit interview answers (POST /api/interview/submit)
 router.post("/submit", userAuth, interviewController.submitInterview);
 
