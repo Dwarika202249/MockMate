@@ -79,28 +79,28 @@ const InterviewHistory = () => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       completed: {
-        bg: "bg-gradient-to-r from-green-50 to-emerald-50",
-        border: "border-green-200",
-        text: "text-green-700",
-        dot: "bg-green-500",
+        bg: "bg-green-500/10 backdrop-blur-md",
+        border: "border-green-500/30",
+        text: "text-green-400",
+        dot: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]",
       },
       "in-progress": {
-        bg: "bg-gradient-to-r from-blue-50 to-cyan-50",
-        border: "border-blue-200",
-        text: "text-blue-700",
-        dot: "bg-blue-500",
+        bg: "bg-blue-500/10 backdrop-blur-md",
+        border: "border-blue-500/30",
+        text: "text-blue-400",
+        dot: "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]",
       },
       active: {
-        bg: "bg-gradient-to-r from-amber-50 to-yellow-50",
-        border: "border-amber-200",
-        text: "text-amber-700",
-        dot: "bg-amber-500",
+        bg: "bg-amber-500/10 backdrop-blur-md",
+        border: "border-amber-500/30",
+        text: "text-amber-400",
+        dot: "bg-amber-500 shadow-[0_0_8px_rgba(251,191,36,0.6)]",
       },
       created: {
-        bg: "bg-gradient-to-r from-gray-50 to-slate-50",
-        border: "border-gray-200",
-        text: "text-gray-700",
-        dot: "bg-gray-500",
+        bg: "bg-gray-500/10 backdrop-blur-md",
+        border: "border-gray-500/30",
+        text: "text-gray-400",
+        dot: "bg-gray-500 shadow-[0_0_8px_rgba(107,114,128,0.6)]",
       },
     };
 
@@ -110,7 +110,7 @@ const InterviewHistory = () => {
       <span
         className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${config.bg} ${config.border} ${config.text}`}
       >
-        <span className={`w-2 h-2 rounded-full ${config.dot}`}></span>
+        <span className={`w-2 h-2 rounded-full ${config.dot} animate-pulse`}></span>
         {status.charAt(0).toUpperCase() + status.slice(1).replace("-", " ")}
       </span>
     );
@@ -119,40 +119,54 @@ const InterviewHistory = () => {
   const getScoreBadge = (score) => {
     if (!score) return null;
 
-    let bgColor = "bg-gradient-to-br from-red-50 to-rose-50";
-    let borderColor = "border-red-200";
-    let textColor = "text-red-700";
+    let bgColor = "bg-red-500/10 backdrop-blur-md";
+    let borderColor = "border-red-500/30";
+    let textColor = "text-red-400";
+    let glowColor = "shadow-[0_0_15px_rgba(239,68,68,0.3)]";
 
     if (score >= 80) {
-      bgColor = "bg-gradient-to-br from-green-50 to-emerald-50";
-      borderColor = "border-green-200";
-      textColor = "text-green-700";
+      bgColor = "bg-green-500/10 backdrop-blur-md";
+      borderColor = "border-green-500/30";
+      textColor = "text-green-400";
+      glowColor = "shadow-[0_0_15px_rgba(34,197,94,0.3)]";
     } else if (score >= 70) {
-      bgColor = "bg-gradient-to-br from-amber-50 to-yellow-50";
-      borderColor = "border-amber-200";
-      textColor = "text-amber-700";
+      bgColor = "bg-amber-500/10 backdrop-blur-md";
+      borderColor = "border-amber-500/30";
+      textColor = "text-amber-400";
+      glowColor = "shadow-[0_0_15px_rgba(251,191,36,0.3)]";
     }
 
     return (
       <div
-        className={`px-4 py-2 rounded-lg border ${bgColor} ${borderColor} text-center`}
+        className={`px-4 py-2 rounded-xl border ${bgColor} ${borderColor} ${glowColor} text-center`}
       >
-        <div className={`text-2xl font-bold ${textColor}`}>{score}</div>
+        <div className={`text-2xl font-bold ${textColor} drop-shadow-lg`}>{score}</div>
         <div className={`text-xs font-semibold ${textColor}`}>Score</div>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6">
+    <div className="relative min-h-screen bg-gradient-to-br from-[#0a0118] via-[#1a0b2e] to-[#0f0520] p-4 sm:p-6 overflow-hidden">
+      {/* Animated Background Orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 -left-20 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-20 -right-20 w-[400px] h-[400px] bg-indigo-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute top-1/2 left-1/2 w-[350px] h-[350px] bg-pink-600/10 rounded-full blur-[90px]" />
+      </div>
+
+      {/* Grid Pattern Overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none" />
+
+      <div className="relative z-10">
       {/* Loading State */}
       {loading && (
         <div className="flex items-center justify-center py-16">
-          <div className="text-center">
+          <div className="text-center bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
             <div className="inline-block">
-              <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+              <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-400 rounded-full animate-spin drop-shadow-[0_0_15px_rgba(168,85,247,0.6)]"></div>
             </div>
-            <p className="mt-4 text-gray-600 font-medium">
+            <p className="mt-4 text-gray-200 font-medium">
               Loading interview history...
             </p>
           </div>
@@ -164,39 +178,43 @@ const InterviewHistory = () => {
           {/* Header Section */}
       <div className="mb-8 sm:mb-10">
         <div className="flex items-center gap-2 sm:gap-3 mb-2">
-          <FiList className="text-purple-600 flex-shrink-0" size={24} />
-          <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent truncate">
-            Interview History
-          </h1>
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+            <FiList className="text-white drop-shadow-lg" size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-pink-300 to-indigo-300 truncate drop-shadow-lg">
+              Interview History
+            </h1>
+            <p className="text-sm sm:text-lg text-gray-300 mt-1">
+              Track your performance
+            </p>
+          </div>
         </div>
-        <p className="text-sm sm:text-lg text-gray-600 mt-2">
-          Track your performance
-        </p>
       </div>
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-          <p className="text-red-700 font-medium">⚠️ {error}</p>
+        <div className="bg-red-500/10 backdrop-blur-xl border border-red-500/30 rounded-2xl p-4 mb-6">
+          <p className="text-red-300 font-medium">⚠️ {error}</p>
         </div>
       )}
 
       {/* Empty State */}
       {interviews.length === 0 && !error && (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center mb-4">
-            <FiBriefcase size={40} className="text-purple-600" />
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-600/30 to-indigo-600/30 backdrop-blur-md flex items-center justify-center mb-4 border border-purple-500/40">
+            <FiBriefcase size={40} className="text-purple-400 drop-shadow-[0_0_10px_rgba(168,85,247,0.6)]" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">
+          <h3 className="text-2xl font-bold text-white mb-2">
             No Interviews Yet
           </h3>
-          <p className="text-gray-600 mb-6 text-center max-w-md">
+          <p className="text-gray-300 mb-6 text-center max-w-md">
             Start your first interview to see your progress and performance
             metrics here.
           </p>
           <button
             onClick={() => navigate("/dashboard/resume")}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-[0_0_20px_rgba(168,85,247,0.5)] transition-all duration-300 border border-purple-500/30 backdrop-blur-md"
           >
             Start Interview
           </button>
@@ -209,17 +227,20 @@ const InterviewHistory = () => {
           {interviews.map((interview) => (
             <div
               key={interview._id}
-              className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-purple-200"
+              className="group relative bg-white/5 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.3)] transition-all duration-300 overflow-hidden border border-purple-500/30 hover:border-purple-500/50"
             >
               {/* Card Header with Gradient */}
-              <div className="h-1 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600"></div>
+              <div className="h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500"></div>
 
-              <div className="p-4 sm:p-6">
+              {/* Gradient overlay on hover */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+              <div className="relative z-10 p-4 sm:p-6">
                 {/* Top Section: Role and Status */}
                 <div className="flex items-start justify-between gap-3 sm:gap-4 mb-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-800 capitalize flex items-center gap-2 mb-2 truncate">
-                      <FiBriefcase size={18} className="text-purple-600 flex-shrink-0" />
+                    <h3 className="text-base sm:text-lg font-bold text-white capitalize flex items-center gap-2 mb-2 truncate">
+                      <FiBriefcase size={18} className="text-purple-400 flex-shrink-0 drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]" />
                       <span className="truncate">
                         {interview.type === 'free' 
                           ? "Free Interview" 
@@ -234,14 +255,14 @@ const InterviewHistory = () => {
                 </div>
 
                 {/* Divider */}
-                <div className="h-px bg-gray-100 my-3 sm:my-4"></div>
+                <div className="h-px bg-purple-500/20 my-3 sm:my-4"></div>
 
                 {/* Interview Details */}
                 <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-5 text-sm">
                   {/* Date */}
                   <div className="flex items-center gap-3">
-                    <FiCalendar size={16} className="text-gray-400 flex-shrink-0" />
-                    <span className="text-gray-600 text-xs sm:text-sm">
+                    <FiCalendar size={16} className="text-purple-400 flex-shrink-0 drop-shadow-[0_0_4px_rgba(168,85,247,0.4)]" />
+                    <span className="text-gray-300 text-xs sm:text-sm">
                       {new Date(interview.createdAt).toLocaleDateString(
                         "en-US",
                         {
@@ -256,8 +277,8 @@ const InterviewHistory = () => {
                   {/* Duration */}
                   {interview.duration && (
                     <div className="flex items-center gap-3">
-                      <FiClock size={16} className="text-gray-400 flex-shrink-0" />
-                      <span className="text-gray-600 text-xs sm:text-sm">
+                      <FiClock size={16} className="text-indigo-400 flex-shrink-0 drop-shadow-[0_0_4px_rgba(99,102,241,0.4)]" />
+                      <span className="text-gray-300 text-xs sm:text-sm">
                         {Math.round(interview.duration / 60)} minutes
                       </span>
                     </div>
@@ -270,15 +291,15 @@ const InterviewHistory = () => {
                     </div>
                   ) : (
                     <div className="mt-3 sm:mt-4">
-                      <div className="px-4 py-2 rounded-lg border bg-gradient-to-br from-gray-50 to-slate-50 border-gray-200 text-center">
-                        <div className="text-xs font-semibold text-gray-600">Complete interview to see score</div>
+                      <div className="px-4 py-2 rounded-xl border bg-white/5 backdrop-blur-md border-purple-500/30 text-center">
+                        <div className="text-xs font-semibold text-gray-400">Complete interview to see score</div>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* Divider */}
-                <div className="h-px bg-gray-100 my-3 sm:my-4"></div>
+                <div className="h-px bg-purple-500/20 my-3 sm:my-4"></div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 sm:gap-3">
@@ -291,7 +312,7 @@ const InterviewHistory = () => {
                           : `/resume-interview/${interview._id}`;
                         navigate(route);
                       }}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-yellow-600 to-amber-600 text-white rounded-lg font-semibold text-xs sm:text-sm hover:shadow-lg transition-all duration-300 group/btn"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-yellow-600 to-amber-600 text-white rounded-xl font-semibold text-xs sm:text-sm hover:shadow-[0_0_15px_rgba(251,191,36,0.4)] transition-all duration-300 group/btn border border-yellow-500/30"
                     >
                       <FiClock size={16} className="hidden sm:inline" />
                       <span>Resume</span>
@@ -299,7 +320,7 @@ const InterviewHistory = () => {
                   ) : (
                     <button
                       onClick={() => navigate(`/feedback/${interview._id}`)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold text-xs sm:text-sm hover:shadow-lg transition-all duration-300 group/btn"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold text-xs sm:text-sm hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all duration-300 group/btn border border-purple-500/30"
                     >
                       <FiEye size={16} className="hidden sm:inline" />
                       <span>Details</span>
@@ -308,7 +329,7 @@ const InterviewHistory = () => {
 
                   <button
                     onClick={() => handleDelete(interview._id)}
-                    className="px-3 sm:px-4 py-2 sm:py-2.5 bg-red-50 text-red-600 rounded-lg font-semibold text-xs sm:text-sm hover:bg-red-100 transition-all duration-300 border border-red-200"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/10 backdrop-blur-md text-red-400 rounded-xl font-semibold text-xs sm:text-sm hover:bg-red-500/20 hover:shadow-[0_0_10px_rgba(239,68,68,0.3)] transition-all duration-300 border border-red-500/30"
                   >
                     <FiTrash2 size={16} />
                   </button>
@@ -338,6 +359,7 @@ const InterviewHistory = () => {
       />
         </>
       )}
+      </div>
     </div>
   );
 };
