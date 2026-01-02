@@ -270,36 +270,26 @@ const Progress = () => {
     return Math.round(sum / trendData.length);
   }, [trendData]);
 
-  // Calculate performance trend (current month vs previous months)
+  // Calculate performance trend (current vs previous interviews)
   const performanceTrend = useMemo(() => {
     if (interviews.length < 2) return { percentage: 0, isPositive: true };
 
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    // Split interviews into two halves: recent vs previous
+    const halfPoint = Math.ceil(interviews.length / 2);
+    const recentInterviews = interviews.slice(0, halfPoint); // Most recent half
+    const previousInterviews = interviews.slice(halfPoint); // Older half
 
-    // Filter interviews by month
-    const currentMonthInterviews = interviews.filter(interview => {
-      const date = new Date(interview.createdAt);
-      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-    });
-
-    const previousMonthInterviews = interviews.filter(interview => {
-      const date = new Date(interview.createdAt);
-      return (date.getMonth() !== currentMonth || date.getFullYear() !== currentYear);
-    });
-
-    if (currentMonthInterviews.length === 0 || previousMonthInterviews.length === 0) {
+    if (recentInterviews.length === 0 || previousInterviews.length === 0) {
       return { percentage: 0, isPositive: true };
     }
 
     // Calculate averages
-    const currentAvg = currentMonthInterviews.reduce((sum, i) => sum + i.score, 0) / currentMonthInterviews.length;
-    const previousAvg = previousMonthInterviews.reduce((sum, i) => sum + i.score, 0) / previousMonthInterviews.length;
+    const recentAvg = recentInterviews.reduce((sum, i) => sum + i.score, 0) / recentInterviews.length;
+    const previousAvg = previousInterviews.reduce((sum, i) => sum + i.score, 0) / previousInterviews.length;
 
     if (previousAvg === 0) return { percentage: 0, isPositive: true };
 
-    const percentageChange = ((currentAvg - previousAvg) / previousAvg) * 100;
+    const percentageChange = ((recentAvg - previousAvg) / previousAvg) * 100;
     return {
       percentage: Math.abs(Math.round(percentageChange)),
       isPositive: percentageChange >= 0
@@ -537,7 +527,7 @@ const Progress = () => {
                     ) : (
                       <FiTrendingDown className="drop-shadow-[0_0_4px_rgba(248,113,113,0.5)]" />
                     )}
-                    {performanceTrend.isPositive ? '+' : '-'}{performanceTrend.percentage}% this month
+                    {performanceTrend.isPositive ? '+' : '-'}{performanceTrend.percentage}% vs previous interviews
                   </span>
                 )}
               </div>
