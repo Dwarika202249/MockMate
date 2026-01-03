@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { motion, AnimatePresence } from "framer-motion";
 import AvatarStage from "../../components/resume/AvatarStage";
+import axios from "axios";
+import toast from "react-hot-toast";
 import ChatPanel from "../../components/resume/ChatPanel";
 import OnboardingModal from "../../components/resume/OnboardingModal";
 import PreparationScreen from "../../components/resume/PreparationScreen";
@@ -46,10 +48,21 @@ const ResumeInterviewPage = () => {
   const [showEndModal, setShowEndModal] = useState(false);
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [userIntroductionProvided, setUserIntroductionProvided] = useState(false); // Track user intro
+  // Refs to surface latest state values for socket handlers
+  const userIntroductionProvidedRef = useRef(userIntroductionProvided);
+  useEffect(() => { userIntroductionProvidedRef.current = userIntroductionProvided; }, [userIntroductionProvided]);
+  const interviewStateRef = useRef(interviewState);
+  useEffect(() => { interviewStateRef.current = interviewState; }, [interviewState]);
+
+  // Timer and elapsed time tracking
+  const [elapsedTime, setElapsedTime] = useState(0); // seconds
+  const [isTimerActive, setIsTimerActive] = useState(false);
+  const [durationMinutes, setDurationMinutes] = useState(null); // set from onboarding duration when available
   
   const silenceTimerRef = useRef(null);
   const messageCounterRef = useRef(0);  // Counter to ensure unique message IDs
   const currentIndexRef = useRef(0);  // Ref to track current question index (must be ref for reliable access)
+  const isPausedRef = useRef(false); // prevents handling socket events when paused
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
 
@@ -78,6 +91,7 @@ const ResumeInterviewPage = () => {
     const utter = new SpeechSynthesisUtterance(text);
     utter.onend = () => {
       setAiSpeaking(false);
+      if (isPausedRef.current) return; // don't continue if paused
       callback && callback();
     };
     synth.speak(utter);
@@ -98,13 +112,40 @@ const ResumeInterviewPage = () => {
         // Handle both response formats: { interview } and direct interview object
         const interview = response.interview || response;
         
-        // Get the last question index for resumption
-        const lastIndex = interview.currentQuestionIndex || 0;
-        setCurrentIndex(lastIndex);
-        currentIndexRef.current = lastIndex;
+        // Restore pausedState if present (priority) otherwise use currentQuestionIndex
+        if (interview.pausedState) {
+          const ps = interview.pausedState;
+          const restoredIndex = ps.currentQuestionIndex || interview.currentQuestionIndex || 0;
+          setCurrentIndex(restoredIndex);
+          currentIndexRef.current = restoredIndex;
 
-        // Load user introduction status for session persistence
-        setUserIntroductionProvided(interview.userIntroductionProvided || false);
+          // Restore answers and elapsed time
+          setAnswers(ps.answers || {});
+          setElapsedTime(ps.elapsedTime || 0);
+
+          // Restore messages from stored conversation (preferred) or pausedState.messages
+          if (interview.conversation && interview.conversation.length > 0) {
+            setMessages(interview.conversation.map((m) => ({ id: m.id, sender: m.sender, text: m.text, timestamp: m.timestamp })));
+          } else if (ps.messages) {
+            setMessages(ps.messages);
+          }
+
+          // Restore intro status
+          setUserIntroductionProvided(ps.userIntroductionProvided || interview.userIntroductionProvided || false);
+        } else {
+          // Get the last question index for resumption
+          const lastIndex = interview.currentQuestionIndex || 0;
+          setCurrentIndex(lastIndex);
+          currentIndexRef.current = lastIndex;
+
+          // Load user introduction status for session persistence
+          setUserIntroductionProvided(interview.userIntroductionProvided || false);
+        }
+
+        // Set durationMinutes from interview preferences if available
+        if (interview.preferences?.duration) {
+          setDurationMinutes(parseInt(interview.preferences.duration));
+        }
 
         // Check if interview is completed, cancelled, or deleted - redirect to feedback
         if (interview.status === 'completed' || interview.status === 'cancelled' || interview.status === 'deleted') {
@@ -127,9 +168,11 @@ const ResumeInterviewPage = () => {
         
         setInterviewData(interview.preferences || null);
         
-        if (interview.status === 'in-progress') {
+        if (interview.status === 'in-progress' || interview.status === 'paused') {
+          // If interview is paused or was in-progress, skip onboarding and show preparation screen
           setShowOnboarding(false);
           setShowPreparation(true);
+          setInterviewState(INTERVIEW_STATES.PREPARING);
         } else if (interview.status === 'active') {
           setShowOnboarding(false);
           setShowPreparation(false);
@@ -173,13 +216,30 @@ const ResumeInterviewPage = () => {
       // Close the onboarding modal
       setShowOnboarding(false);
       
-      // Update interview preferences in the backend
-      const updateRes = await InterviewService.updateInterviewPreferences(interviewId, {
+        // Map duration (minutes) to question count: 15->3, 30->5, 45->7
+      const minutes = parseInt(data.preferences?.duration) || 30;
+      let numQuestions = 5;
+      if (minutes <= 15) numQuestions = 3;
+      else if (minutes <= 30) numQuestions = 5;
+      else if (minutes <= 45) numQuestions = 7;
+      else numQuestions = Math.max(5, Math.round((minutes / 30) * 5)); // fallback scaling
+
+      // Persist duration and numQuestions to state and backend
+      setDurationMinutes(minutes);
+
+      const prefsToSave = {
         ...data.preferences,
+        numQuestions,
+        duration: String(minutes)
+      };
+
+      // Update interview preferences in the backend (include numQuestions)
+      const updateRes = await InterviewService.updateInterviewPreferences(interviewId, {
+        ...prefsToSave,
         status: 'in-progress'
       });
 
-      setInterviewData(data);
+      setInterviewData({ ...data, preferences: prefsToSave });
       setInterviewState(INTERVIEW_STATES.PREPARING);
       setShowPreparation(true);  // CRITICAL: Show the preparation/countdown screen
 
@@ -194,7 +254,7 @@ const ResumeInterviewPage = () => {
         interviewId,
         userId: socket?.id, // Include socket ID for backend reference
         currentQuestionIndex: currentIndexRef.current,
-        preferences: data.preferences,
+        preferences: prefsToSave,
         resumeContext: {
           ...data.resumeContext,
           name: data.name,
@@ -221,7 +281,11 @@ const ResumeInterviewPage = () => {
       setInterviewState(INTERVIEW_STATES.RUNNING);
       setRunning(true);
       setShowPreparation(false);  // Hide preparation screen
-      
+      // Clear paused flag so events resume
+      isPausedRef.current = false;
+      // Resume timer
+      setIsTimerActive(true);
+
       // CRITICAL: Check if user already provided introduction (session resume case)
       if (userIntroductionProvided) {
         askQuestion(currentIndexRef.current);
@@ -260,11 +324,22 @@ const ResumeInterviewPage = () => {
     }
 
     const unsubQuestions = subscribe('QUESTIONS_READY', (data) => {
-      setQuestions(data.questions);
+      if (isPausedRef.current) return; // ignore while paused
+      const incomingQuestions = data.questions || [];
+      setQuestions(incomingQuestions);
+
+      // Ensure currentIndex is valid
+      if (typeof currentIndexRef.current === 'undefined' || currentIndexRef.current === null) {
+        setCurrentIndex(0);
+        currentIndexRef.current = 0;
+      }
+
+      // Do not auto-ask here; server will emit ASK_QUESTION deterministically. This avoids duplicate speaking.
       setIsProcessing(false);
     });
 
     const unsubFeedback = subscribe('ANSWER_EVALUATED', (data) => {
+      if (isPausedRef.current) return; // ignore events while paused
       const { questionId, evaluation } = data;
       // Map evaluation back to the most recent answer for that question
       setAnswers(prev => {
@@ -282,30 +357,49 @@ const ResumeInterviewPage = () => {
       // Push AI feedback into chat panel
       if (evaluation) {
         const feedbackText = evaluation.feedback || evaluation.label || 'Feedback received.';
-        setMessages((m) => [...m, { id: `ai-feedback-${Date.now()}`, sender: 'ai', text: feedbackText }]);
+        pushAIMessage(feedbackText).catch((e) => console.warn('Failed to save feedback message:', e?.message || e));
       }
     });
 
     const unsubNextQuestion = subscribe('NEXT_QUESTION', (data) => {
+      if (isPausedRef.current) return; // ignore events while paused
       const { question } = data;
       
-      // Use the question object from the event (backend is already sending it)
-      // Don't rely on the questions array state due to closure issues
       if (question) {
-        const nextIndex = (currentIndexRef.current || 0) + 1;
+        // Try to find the index of the incoming question; fallback to increment
+        const foundIndex = questions.findIndex(q => q.id === question.id);
+        const nextIndex = foundIndex >= 0 ? foundIndex : ((currentIndexRef.current || 0) + 1);
         setCurrentIndex(nextIndex);
         currentIndexRef.current = nextIndex; // Update ref immediately
-        
-        pushAIMessage(question.text);
-        speakAI(question.text, () => {
-          startListening();
-        });
+        // NOTE: Do not speak here. Server will emit ASK_QUESTION for deterministic speaking.
       } else {
         console.warn('⚠️ No question in NEXT_QUESTION event data');
       }
     });
 
+    const unsubAskQuestion = subscribe('ASK_QUESTION', (data) => {
+      if (isPausedRef.current) return; // ignore while paused
+      const { question } = data || {};
+      if (!question) return; // ASK_QUESTION without question payload ignored
+
+      // Find existing index or append and ask
+      const idx = questions.findIndex(q => q.id === question.id);
+      if (idx >= 0) {
+        askQuestion(idx);
+        return;
+      }
+
+      setQuestions(prev => {
+        const next = [...prev, question];
+        const askIdx = next.length - 1;
+        // Ask after updating local list
+        setTimeout(() => askQuestion(askIdx), 0);
+        return next;
+      });
+    });
+
     const unsubInterviewCompleted = subscribe('INTERVIEW_COMPLETED', (data) => {
+      if (isPausedRef.current) return; // ignore while paused
       const { summary, outroMessage } = data || {};
       
       setIsProcessing(false);
@@ -315,12 +409,8 @@ const ResumeInterviewPage = () => {
       const outro = outroMessage || "Thank you for taking the time to interview with me today. You've demonstrated great skills and insight. We'll review your responses carefully and get back to you soon. Good luck!";
       
       messageCounterRef.current += 1;
-      setMessages((m) => [...m, { 
-        id: `ai-outro-${Date.now()}-${messageCounterRef.current}`, 
-        sender: 'ai', 
-        text: outro,
-        isOutro: true 
-      }]);
+      const outroText = outro;
+      pushAIMessage(outroText).catch((e) => console.warn('Failed to save outro message:', e?.message || e));
       
       // Speak the outro message
       speakAI(outro, () => {
@@ -341,6 +431,8 @@ const ResumeInterviewPage = () => {
       unsubQuestions();
       unsubFeedback();
       unsubNextQuestion();
+      // cleanup ASK_QUESTION
+      try { unsubAskQuestion && unsubAskQuestion(); } catch (e) { /* ignore */ }
       unsubInterviewCompleted();
       unsubError();
     };
@@ -370,7 +462,7 @@ const ResumeInterviewPage = () => {
           startListening();
         });
       } else {
-        console.warn('⚠️ Invalid question index for resume');
+        // Invalid question index for resume - ignoring
       }
     }
   }, [running, userIntroductionProvided, questions.length, messages.length]);
@@ -395,15 +487,38 @@ const ResumeInterviewPage = () => {
     // eslint-disable-next-line
   }, [transcript]);
 
-  const pushAIMessage = (text) => {
+  // Basic timer effect: increment elapsedTime while active
+  useEffect(() => {
+    if (!isTimerActive) return;
+    const t = setInterval(() => setElapsedTime((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [isTimerActive]);
+
+  const pushAIMessage = async (text) => {
     messageCounterRef.current += 1;
     const uniqueId = `ai-${Date.now()}-${Math.random()}-${messageCounterRef.current}`;
-    setMessages((m) => [...m, { id: uniqueId, sender: "ai", text }]);
+    const msg = { id: uniqueId, sender: "ai", text, timestamp: new Date().toISOString() };
+    setMessages((m) => [...m, msg]);
+    try {
+      // Persist message to server for session recovery
+      await InterviewService.saveMessage(interviewId, { sender: 'ai', text: msg.text, timestamp: msg.timestamp });
+    } catch (err) {
+      console.warn('Failed to save AI message:', err?.response?.data || err?.message || err);
+    }
   };
-  const pushUserMessage = (text) => {
+
+  const pushUserMessage = async (text) => {
     messageCounterRef.current += 1;
     const uniqueId = `user-${Date.now()}-${Math.random()}-${messageCounterRef.current}`;
-    setMessages((m) => [...m, { id: uniqueId, sender: "user", text }]);
+    const msg = { id: uniqueId, sender: "user", text, timestamp: new Date().toISOString() };
+    // Finalized user messages should be saved to DB
+    setMessages((m) => [...m, msg]);
+    try {
+      await InterviewService.saveMessage(interviewId, { sender: 'user', text: msg.text, timestamp: msg.timestamp });
+    } catch (err) {
+      console.error('Failed to save user message:', err?.response?.data || err?.message || err);
+      toast.error('Failed to persist your answer. It will be saved locally until connection is restored.');
+    }
   };
 
   const updateLiveUserBubble = (text) => {
@@ -442,11 +557,18 @@ const ResumeInterviewPage = () => {
   };
 
   const askQuestion = (index) => {
-    const q = questions[index];
+    const q = questions?.[index];
     if (!q) {
-      console.error('❌ Question not found at index:', index);
+      console.warn('❌ Question not found at index:', index, ' — attempting to recover');
+      // Try to request next question from server to recover (avoids client crash)
+      try {
+        emit && emit('REQUEST_NEXT_QUESTION', { interviewId });
+      } catch (e) {
+        console.error('Failed to emit REQUEST_NEXT_QUESTION:', e?.message || e);
+      }
       return;
     }
+
     setCurrentIndex(index); // Update state for UI
     currentIndexRef.current = index; // Update ref for reliable access in event handlers
     pushAIMessage(q.text);
@@ -534,13 +656,75 @@ const ResumeInterviewPage = () => {
     navigate(`/feedback/${interviewId || "latest"}`);
   };
 
+  // Pause interview: save state, stop speech/listening, notify server, and redirect to dashboard
+  const handlePauseInterview = async () => {
+    try {
+      // Stop any ongoing speech and listening
+      stopListening();
+      if (window.speechSynthesis && window.speechSynthesis.cancel) {
+        window.speechSynthesis.cancel();
+      }
+
+      // Stop timer and finalize any live transcript bubble
+      setIsTimerActive(false);
+      finalizeLiveUserBubble(transcript || "");
+      resetTranscript();
+
+      setIsProcessing(false);
+
+      // Mark paused so socket events are ignored
+      isPausedRef.current = true;
+
+      // Build paused state payload
+      const pausedState = {
+        currentQuestionIndex: currentIndexRef.current,
+        answers: answers || {},
+        messages: messages || [],
+        userIntroductionProvided: userIntroductionProvided || false,
+        pausedAt: new Date().toISOString()
+      };
+
+      // Persist to backend (pause endpoint)
+      await axios.patch(
+        `${import.meta.env.VITE_API_URL}/interview/${interviewId}/pause`,
+        { pausedState },
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+
+      // Update interview status to paused (best-effort)
+      try {
+        await InterviewService.updateInterviewPreferences(interviewId, { status: 'paused' });
+      } catch (e) {
+        console.warn('Failed to update interview status to paused:', e?.message || e);
+      }
+
+      // Notify server via websocket to halt processing for this interview
+      try {
+        emit && emit('PAUSE_INTERVIEW', { interviewId, pausedState });
+      } catch (e) {
+        console.warn('Failed to emit PAUSE_INTERVIEW:', e?.message || e);
+      }
+
+      // Notify user and redirect to dashboard
+      setMessages((m) => [...m, { id: `system-pause-${Date.now()}`, sender: 'system', text: 'Interview paused. Redirecting to dashboard...' }]);
+      setShowEndModal(false);
+      setRunning(false);
+
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error pausing interview:', error);
+      toast.error('Failed to pause interview. Please try again.');
+      isPausedRef.current = false;
+    }
+  };
+
   if (!browserSupportsSpeechRecognition) {
     return <div className="p-6">Browser does not support Speech Recognition.</div>;
   }
 
   // Show preparation screen if in preparing state
   if (showPreparation) {
-    return <PreparationScreen onReady={handlePreparationComplete} interviewData={interviewData} />;
+    return <PreparationScreen onReady={handlePreparationComplete} interviewData={interviewData} durationMinutes={durationMinutes} />;
   }
 
   return (
@@ -619,7 +803,7 @@ const ResumeInterviewPage = () => {
         <PauseModal
           show={showEndModal}
           onClose={() => setShowEndModal(false)}
-          onConfirm={() => handleEndInterview("Interview ended by user.")}
+          onConfirm={handlePauseInterview}
         />
       )}
     </div>

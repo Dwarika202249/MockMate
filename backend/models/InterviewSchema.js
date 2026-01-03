@@ -22,7 +22,7 @@ const interviewSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['created', 'in-progress', 'active', 'completed', 'cancelled', 'deleted'],
+        enum: ['created', 'in-progress', 'active', 'paused', 'completed', 'cancelled', 'deleted'],
         default: 'created'
     },
     preferences: {
@@ -130,6 +130,15 @@ const interviewSchema = new mongoose.Schema({
         currentQuestionIndex: Number,
         elapsedTime: Number,
         answers: Object
+    },
+    // Flags to prevent double-credit consumption for operations
+    questionGenerationConsumed: {
+        type: Boolean,
+        default: false
+    },
+    summaryCreditsConsumed: {
+        type: Boolean,
+        default: false
     },
     startTime: Date,
     endTime: Date,

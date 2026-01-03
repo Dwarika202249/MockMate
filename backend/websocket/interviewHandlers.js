@@ -50,68 +50,110 @@ const interviewHandlers = {
             // Generate initial questions if not already done
             if (!interview.questions || interview.questions.length === 0) {
                 try {
-                    // Consume credits for question generation (pass numQuestions for dynamic calculation)
-                    await consumeQuestionGenerationCredits(
-                        interview.user._id,
-                        interviewId,
-                        interviewType,
-                        numQuestions
+                    // Atomically mark question generation as requested to prevent double-charging
+                    const reserved = await Interview.findOneAndUpdate(
+                        { _id: interviewId, questionGenerationConsumed: { $ne: true } },
+                        { $set: { questionGenerationConsumed: true } },
+                        { new: false }
                     );
-                    
-                    const questions = await generateQuestionsWithFailover(
-                        interview.resume?.summary || interview.details || '',
-                        interview.resume?.jobRole || interview.type || 'General',
-                        numQuestions,
-                        difficulty
-                    );
-                    
-                    if (!questions || questions.length === 0) {
-                        throw new Error('No questions returned from AI provider failover');
-                    }
-                    
-                    // Single point of formatting - CRITICAL
-                    const formattedQuestions = questions.map((q, idx) => {
-                        // Handle if stringified
-                        const question = typeof q === 'string' ? JSON.parse(q) : q;
-                        
-                        return {
-                            id: question.id || `q${idx + 1}`,
-                            text: question.text || '',
-                            type: question.type || question.topic || 'Technical',
-                            difficulty: question.difficulty || difficulty || 'medium',
-                            expectedKeywords: Array.isArray(question.expectedKeywords) 
-                                ? question.expectedKeywords 
-                                : (Array.isArray(question.expected_keywords) ? question.expected_keywords : []),
-                            order: question.order || idx + 1
-                        };
-                    });
-                    
-                    // Validate before saving
-                    if (!Array.isArray(formattedQuestions) || formattedQuestions.length === 0) {
-                        throw new Error('Formatted questions is empty or not an array');
-                    }
-                    if (typeof formattedQuestions[0] !== 'object') {
-                        throw new Error('First question is not an object: ' + typeof formattedQuestions[0]);
-                    }
-                    
-                    // Convert to plain objects via JSON to ensure proper serialization
-                    const plainQuestionsArray = JSON.parse(JSON.stringify(formattedQuestions));
-                    
-                    // Use native MongoDB driver to bypass Mongoose casting issues
-                    // This avoids the CastError that occurs with updateOne
-                    const result = await Interview.collection.updateOne(
-                        { _id: new mongoose.Types.ObjectId(interviewId) },
-                        { $set: { questions: plainQuestionsArray } }
-                    );
-                    
-                    // Re-fetch the updated document (use lean to ensure questions are hydrated)
-                    const updatedInterview = await Interview.findById(interviewId).lean();
-                    const finalQuestions = updatedInterview?.questions || plainQuestionsArray;
 
-                    io.to(`interview-${interviewId}`).emit('QUESTIONS_READY', {
-                        questions: finalQuestions,
-                        currentQuestion: finalQuestions[0]
-                    });
+                    if (reserved) {
+                        // We reserved the generation slot — consume credits and generate questions
+                        await consumeQuestionGenerationCredits(
+                            interview.user._id,
+                            interviewId,
+                            interviewType,
+                            numQuestions
+                        );
+
+                        const questions = await generateQuestionsWithFailover(
+                            interview.resume?.summary || interview.details || '',
+                            interview.resume?.jobRole || interview.type || 'General',
+                            numQuestions,
+                            difficulty
+                        );
+                        
+                        if (!questions || questions.length === 0) {
+                            throw new Error('No questions returned from AI provider failover');
+                        }
+                        
+                        // Single point of formatting - CRITICAL
+                        const formattedQuestions = questions.map((q, idx) => {
+                            // Handle if stringified
+                            const question = typeof q === 'string' ? JSON.parse(q) : q;
+                            
+                            return {
+                                id: question.id || `q${idx + 1}`,
+                                text: question.text || '',
+                                type: question.type || question.topic || 'Technical',
+                                difficulty: question.difficulty || difficulty || 'medium',
+                                expectedKeywords: Array.isArray(question.expectedKeywords) 
+                                    ? question.expectedKeywords 
+                                    : (Array.isArray(question.expected_keywords) ? question.expected_keywords : []),
+                                order: question.order || idx + 1
+                            };
+                        });
+
+                        // Validate before saving
+                        if (!Array.isArray(formattedQuestions) || formattedQuestions.length === 0) {
+                            throw new Error('Formatted questions is empty or not an array');
+                        }
+                        if (typeof formattedQuestions[0] !== 'object') {
+                            throw new Error('First question is not an object: ' + typeof formattedQuestions[0]);
+                        }
+                        
+                        // Convert to plain objects via JSON to ensure proper serialization
+                        const plainQuestionsArray = JSON.parse(JSON.stringify(formattedQuestions));
+                        
+                        // Use native MongoDB driver to bypass Mongoose casting issues
+                        // This avoids the CastError that occurs with updateOne
+                        await Interview.collection.updateOne(
+                            { _id: new mongoose.Types.ObjectId(interviewId) },
+                            { $set: { questions: plainQuestionsArray } }
+                        );
+                        
+                        // Re-fetch the updated document (use lean to ensure questions are hydrated)
+                        const updatedInterview = await Interview.findById(interviewId).lean();
+                        const finalQuestions = updatedInterview?.questions || plainQuestionsArray;
+
+                        io.to(`interview-${interviewId}`).emit('QUESTIONS_READY', {
+                            questions: finalQuestions,
+                            currentQuestion: finalQuestions[0]
+                        });
+
+                        // Deterministic trigger: Ask the current question when appropriate
+                        try {
+                            const shouldAsk = ((interview.status === 'active' || interview.status === 'in-progress') && (interview.userIntroductionProvided || interview.pausedState?.userIntroductionProvided));
+                            if (shouldAsk) {
+                                io.to(`interview-${interviewId}`).emit('ASK_QUESTION', { question: finalQuestions[0] });
+                            }
+                        } catch (err) {
+                            // failed to emit ASK_QUESTION on initialization
+                        }
+                    } else {
+                        // Question generation is already requested or completed. If questions exist, send them; otherwise inform client to wait.
+                        if (interview.questions && interview.questions.length > 0) {
+                            io.to(`interview-${interviewId}`).emit('QUESTIONS_READY', {
+                                questions: interview.questions,
+                                currentQuestion: interview.questions[interview.currentQuestionIndex || 0]
+                            });
+
+                            // Ask current question if interview is active and user intro is provided
+                            try {
+                                const currentIdx = interview.currentQuestionIndex || 0;
+                                const currentQ = interview.questions[currentIdx];
+                                const shouldAsk = ((interview.status === 'active' || interview.status === 'in-progress') && (interview.userIntroductionProvided || interview.pausedState?.userIntroductionProvided));
+                                if (shouldAsk && currentQ) {
+                                    io.to(`interview-${interviewId}`).emit('ASK_QUESTION', { question: currentQ });
+                                }
+                            } catch (err) {
+                                // failed to emit ASK_QUESTION for existing questions
+                            }
+                        } else {
+                            // Generation in progress — instruct client to wait (QUESTIONS_READY will be emitted by worker when done)
+                            socket.emit('INFO', { message: 'Question generation already in progress. Please wait.' });
+                        }
+                    }
                 } catch (error) {
                     console.error('❌ Error generating questions:', error.message);
                     console.error('Error stack:', error.stack);
@@ -217,14 +259,25 @@ const interviewHandlers = {
                 const isLastQuestion = questionIndex >= interviewForQuestions.questions.length - 1;
 
                 if (isLastQuestion) {
-                    // Consume credits for summary generation
-                    const interviewType = interviewForQuestions.type || 'resume';
-                    await consumeSummaryCredits(
-                        interviewForQuestions.user,
-                        interviewId,
-                        interviewType
+                    // Atomically reserve summary credits to avoid double-charge
+                    const reservedSummary = await Interview.findOneAndUpdate(
+                        { _id: interviewId, summaryCreditsConsumed: { $ne: true } },
+                        { $set: { summaryCreditsConsumed: true } },
+                        { new: false }
                     );
-                    
+
+                    // Consume credits for summary generation only if not already consumed
+                    if (reservedSummary) {
+                        const interviewType = interviewForQuestions.type || 'resume';
+                        await consumeSummaryCredits(
+                            interviewForQuestions.user,
+                            interviewId,
+                            interviewType
+                        );
+                    } else {
+                        console.warn('Summary credits already consumed for interview:', interviewId);
+                    }
+
                     // Generate interview summary
                     const summary = await generateSummaryWithFailover({
                         questions: interviewForQuestions.questions,
@@ -296,6 +349,15 @@ const interviewHandlers = {
                     io.to(`interview-${interviewId}`).emit('NEXT_QUESTION', {
                         question: nextQuestion
                     });
+
+                    // Deterministic ask: instruct clients to ask the next question
+                    try {
+                        if (nextQuestion) {
+                            io.to(`interview-${interviewId}`).emit('ASK_QUESTION', { question: nextQuestion });
+                        }
+                    } catch (err) {
+                        // failed to emit ASK_QUESTION after SUBMIT_ANSWER
+                    }
                 }
             } catch (error) {
                 console.error('\n❌ ERROR IN ANSWER EVALUATION:');
@@ -335,9 +397,39 @@ const interviewHandlers = {
             io.to(`interview-${interviewId}`).emit('NEXT_QUESTION', {
                 question: interview.questions[currentIndex + 1]
             });
+
+            try {
+                const nextQ = interview.questions[currentIndex + 1];
+                if (nextQ) io.to(`interview-${interviewId}`).emit('ASK_QUESTION', { question: nextQ });
+            } catch (err) {
+                // failed to emit ASK_QUESTION in REQUEST_NEXT_QUESTION
+            }
         } catch (error) {
             console.error('Error in REQUEST_NEXT_QUESTION:', error);
             socket.emit('ERROR', { message: 'Failed to get next question' });
+        }
+    },
+
+    // Pause interview via websocket (optional)
+    PAUSE_INTERVIEW: async (io, socket, data) => {
+        try {
+            const { interviewId, pausedState } = data;
+            const interview = await Interview.findById(interviewId);
+            if (!interview) {
+                socket.emit('ERROR', { message: 'Interview not found' });
+                return;
+            }
+
+            // Update status and paused state
+            interview.status = 'paused';
+            if (pausedState) interview.pausedState = pausedState;
+            await interview.save();
+
+            // Notify room that interview is paused
+            io.to(`interview-${interviewId}`).emit('PAUSED', { pausedState: interview.pausedState });
+        } catch (error) {
+            console.error('Error in PAUSE_INTERVIEW:', error);
+            socket.emit('ERROR', { message: 'Failed to pause interview' });
         }
     }
 };

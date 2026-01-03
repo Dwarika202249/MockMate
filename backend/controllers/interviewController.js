@@ -474,12 +474,12 @@ exports.pauseInterview = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized to pause this interview' });
     }
 
-    // Update interview with paused state
+    // Update interview with paused state and set status to 'paused'
     const updatedInterview = await Interview.findByIdAndUpdate(
       req.params.interviewId,
       { 
         $set: { 
-          status: 'in-progress',
+          status: 'paused',
           pausedState: pausedState || {}
         } 
       },
@@ -515,7 +515,12 @@ exports.saveMessage = async (req, res) => {
   try {
     const { id } = req.params;
     const { sender, text, timestamp } = req.body;
-    const userId = req.user.id;
+
+    // Ensure authenticated user present
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     // Validate input
     if (!sender || !text) {
@@ -528,11 +533,16 @@ exports.saveMessage = async (req, res) => {
 
     // Find interview and verify ownership
     const interview = await Interview.findById(id);
+    console.log('Saving message for interview:', id, 'userId:', userId, 'body:', { sender, text, timestamp });
     if (!interview) {
+      console.warn('Interview not found while saving message:', id);
       return res.status(404).json({ message: 'Interview not found' });
     }
 
-    if (interview.user.toString() !== userId) {
+    // Support both populated user object and raw ObjectId
+    const interviewUserId = interview.user?._id ? interview.user._id.toString() : (interview.user ? interview.user.toString() : null);
+    if (!interviewUserId || interviewUserId !== userId) {
+      console.warn('Unauthorized message save attempt:', { interviewUserId, userId });
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
@@ -545,23 +555,65 @@ exports.saveMessage = async (req, res) => {
       messageType: sender === 'ai' ? 'message' : 'answer'
     };
 
-    // Add message to conversation array
-    if (!interview.conversation) {
-      interview.conversation = [];
+    // Defensive fix: if questions were accidentally stored as a JSON string, parse them to avoid Mongoose cast errors
+    if (typeof interview.questions === 'string') {
+      try {
+        interview.questions = JSON.parse(interview.questions);
+        console.warn('Parsed stringified interview.questions into array for interview:', id);
+      } catch (parseErr) {
+        console.error('Failed to parse interview.questions for interview:', id, parseErr);
+        // If parsing fails, clear questions to avoid validation errors (we'll log and allow recovery)
+        interview.questions = [];
+      }
     }
-    
+
+    // Ensure conversation array exists
+    if (!Array.isArray(interview.conversation)) interview.conversation = [];
+
+    console.log('Before push, conversation length:', interview.conversation.length);
     interview.conversation.push(message);
+    console.log('After push, conversation length:', interview.conversation.length);
 
-    // Save interview
-    await interview.save();
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Message saved'
-    });
+    // Save interview and handle potential save errors
+    try {
+      await interview.save();
+      res.status(200).json({ status: 'success', message: 'Message saved', messageObj: message });
+    } catch (saveErr) {
+      console.error('Error saving interview conversation (save):', saveErr);
+      console.warn('Attempting fallback $push update to persist message...');
+      try {
+        const updateRes = await Interview.findByIdAndUpdate(
+          id,
+          { $push: { conversation: message } },
+          { new: true }
+        );
+        if (updateRes) {
+          console.info('Fallback $push succeeded');
+          return res.status(200).json({ status: 'success', message: 'Message saved (fallback)', messageObj: message });
+        } else {
+          console.error('Fallback $push did not find interview to update');
+          const response = { message: 'Failed to persist message' };
+          if (process.env.NODE_ENV !== 'production') {
+            response.error = saveErr.message;
+            response.stack = saveErr.stack;
+          }
+          return res.status(500).json(response);
+        }
+      } catch (pushErr) {
+        console.error('Fallback $push failed:', pushErr);
+        const response = { message: 'Failed to persist message' };
+        if (process.env.NODE_ENV !== 'production') {
+          response.error = pushErr.message || saveErr.message;
+          response.stack = pushErr.stack || saveErr.stack;
+        }
+        return res.status(500).json(response);
+      }
+    }
   } catch (error) {
     console.error('Error saving message:', error);
-    res.status(500).json({ message: 'Failed to save message' });
+    const response = { message: 'Failed to save message' };
+    if (process.env.NODE_ENV !== 'production') response.error = error.message;
+    res.status(500).json(response);
   }
 };
 

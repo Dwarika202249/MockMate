@@ -32,6 +32,15 @@ class InterviewService {
         }
     }
 
+    static async saveMessage(interviewId, message) {
+        try {
+            const response = await axios.post(`${API_URL}/interview/${interviewId}/message`, message, this.getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            throw this.handleError(error);
+        }
+    }
+
     static async updateInterviewPreferences(interviewId, preferences) {
         try {
             const response = await axios.put(`${API_URL}/interview/${interviewId}/preferences`, preferences, this.getAuthHeaders());
