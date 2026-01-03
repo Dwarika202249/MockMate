@@ -58,6 +58,8 @@ const ResumeInterviewPage = () => {
   const [elapsedTime, setElapsedTime] = useState(0); // seconds
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [durationMinutes, setDurationMinutes] = useState(null); // set from onboarding duration when available
+  // Background persistence indicator (non-blocking)
+  const [isPersisting, setIsPersisting] = useState(false); // shows small spinner near timer when true
   
   const silenceTimerRef = useRef(null);
   const messageCounterRef = useRef(0);  // Counter to ensure unique message IDs
@@ -280,19 +282,35 @@ const ResumeInterviewPage = () => {
 
   const handlePreparationComplete = async () => {
     try {
-      // Update interview status to active
-      const updateRes = await InterviewService.updateInterviewPreferences(interviewId, {
-        status: 'active'
-      });
-
-      // Set state transitions
+      // Immediately transition UI to running so users aren't blocked by network latency
       setInterviewState(INTERVIEW_STATES.RUNNING);
       setRunning(true);
-      setShowPreparation(false);  // Hide preparation screen
+      setShowPreparation(false);  // Hide preparation screen immediately
       // Clear paused flag so events resume
       isPausedRef.current = false;
       // Resume timer
       setIsTimerActive(true);
+
+      // Fire-and-forget: persist status to backend (do not block UI)
+      setIsPersisting(true);
+      InterviewService.updateInterviewPreferences(interviewId, { status: 'active' })
+        .catch((err) => console.warn('Failed to persist interview active status:', err?.message || err))
+        .finally(() => setIsPersisting(false));
+
+      // Ensure server is aware (re-initialize questions/state) if socket is connected
+      try {
+        if (isConnected) {
+          emit('INITIALIZE_INTERVIEW', {
+            interviewId,
+            userId: socket?.id,
+            currentQuestionIndex: currentIndexRef.current,
+            userIntroductionProvided: userIntroductionProvided,
+            preferences: interviewData?.preferences
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to emit INITIALIZE_INTERVIEW on preparation complete:', err?.message || err);
+      }
 
       // CRITICAL: Check if user already provided introduction (session resume case)
       if (userIntroductionProvided) {
@@ -714,21 +732,26 @@ const ResumeInterviewPage = () => {
         answers: answers || {},
         messages: messages || [],
         userIntroductionProvided: userIntroductionProvided || false,
+        elapsedTime: elapsedTime || 0,
         pausedAt: new Date().toISOString()
       };
 
       // Persist to backend (pause endpoint)
-      await axios.patch(
-        `${import.meta.env.VITE_API_URL}/interview/${interviewId}/pause`,
-        { pausedState },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      );
-
-      // Update interview status to paused (best-effort)
+      setIsPersisting(true);
       try {
-        await InterviewService.updateInterviewPreferences(interviewId, { status: 'paused' });
-      } catch (e) {
-        console.warn('Failed to update interview status to paused:', e?.message || e);
+        await axios.patch(
+          `${import.meta.env.VITE_API_URL}/interview/${interviewId}/pause`,
+          { pausedState },
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+      } finally {
+        // Update interview status to paused (best-effort)
+        try {
+          await InterviewService.updateInterviewPreferences(interviewId, { status: 'paused' });
+        } catch (e) {
+          console.warn('Failed to update interview status to paused:', e?.message || e);
+        }
+        setIsPersisting(false);
       }
 
       // Notify server via websocket to halt processing for this interview
@@ -762,7 +785,10 @@ const ResumeInterviewPage = () => {
 
   // Compute remaining seconds for timer-driven UI
   const remainingSeconds = durationMinutes ? Math.max(0, Number(durationMinutes) * 60 - elapsedTime) : null;
-  const endingSoon = isTimerActive && remainingSeconds !== null && remainingSeconds <= 10 && remainingSeconds > 0;
+  let endingSoon = false;
+  if (isTimerActive && remainingSeconds !== null) {
+    endingSoon = remainingSeconds <= 10 && remainingSeconds > 0;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0118] via-[#1a0b2e] to-[#0f0520] p-6">
@@ -812,7 +838,15 @@ const ResumeInterviewPage = () => {
                 <div className={`text-lg font-bold ${listeningLive ? 'text-green-400' : 'text-gray-400'}`}>{listeningLive ? 'Yes' : 'No'}</div>
               </div>
               <div className="p-3 bg-white/5 border border-purple-500/10 rounded-lg text-center">
-                <div className="text-sm text-gray-300">Time Left</div>
+                <div className="text-sm text-gray-300 flex items-center justify-center gap-2">
+                  <span>Time Left</span>
+                  {isPersisting && (
+                    <svg className="animate-spin h-4 w-4 text-white/80" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                  )}
+                </div>
                 <div className={`text-lg font-bold ${endingSoon ? 'text-red-300' : 'text-white'}`}>
                   {durationMinutes ? (
                     (() => {
