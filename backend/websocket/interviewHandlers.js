@@ -7,6 +7,7 @@ const {
     consumeAnswerEvaluationCredits,
     consumeSummaryCredits 
 } = require('../utils/creditManager');
+const Feedback = require('../models/FeedbackSchema');
 
 // WebSocket event handlers for interview flow
 const interviewHandlers = {
@@ -501,11 +502,61 @@ const interviewHandlers = {
                 { new: true }
             );
 
-            // Emit completion to participants
-            io.to(`interview-${interviewId}`).emit('INTERVIEW_COMPLETED', {
-                summary,
-                outroMessage
-            });
+            // Build Feedback payload (idempotent upsert)
+            try {
+                const deriveLabel = (score) => {
+                    if (typeof score !== 'number') return undefined;
+                    if (score >= 80) return 'Excellent';
+                    if (score >= 60) return 'Good';
+                    if (score >= 40) return 'Fair';
+                    return 'Needs Improvement';
+                };
+
+                const feedbackPayload = {
+                    interviewId: interviewId,
+                    user: interview.user,
+                    source: (interview.type === 'free' ? 'local' : 'ai'),
+                    questions: interview.questions || [],
+                    answers: (interview.answers || []).map((a) => ({
+                        questionId: a.questionId,
+                        text: a.text,
+                        feedback: {
+                            score: a.feedback?.score,
+                            label: a.feedback?.label || deriveLabel(a.feedback?.score),
+                            strengths: a.feedback?.strengths || [],
+                            improvements: a.feedback?.improvements || [],
+                            feedbackText: a.feedback?.feedback || ''
+                        }
+                    })),
+                    summary: summary || {},
+                    legacy: {
+                        rawQuestions: (interview.questions || []).map((q) => q.text || q),
+                        rawAnswers: (interview.answers || []).map((a) => a.text || ''),
+                        rawFeedback: ''
+                    }
+                };
+
+                const feedbackDoc = await Feedback.findOneAndUpdate(
+                    { interviewId: interviewId },
+                    { $set: feedbackPayload, $inc: { version: 1 } },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+
+                // Emit completion to participants including feedback id
+                io.to(`interview-${interviewId}`).emit('INTERVIEW_COMPLETED', {
+                    summary,
+                    outroMessage,
+                    feedbackId: feedbackDoc._id
+                });
+
+            } catch (fbErr) {
+                console.error('Failed to save Feedback doc:', fbErr);
+                // emit completion without feedback id
+                io.to(`interview-${interviewId}`).emit('INTERVIEW_COMPLETED', {
+                    summary,
+                    outroMessage
+                });
+            }
         } catch (error) {
             console.error('Error in END_INTERVIEW:', error);
             socket.emit('ERROR', { message: 'Failed to end interview' });

@@ -27,6 +27,7 @@ app.use("/api/auth", authRoutes);
 app.use('/api/interview', interviewRoutes);
 app.use('/api/resume-parser', resumeParserRoute);
 app.use('/api/credits', creditsRoutes);
+app.use('/api/feedback', require('./routes/feedback'));
 
 //mongodb connection
 const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/";

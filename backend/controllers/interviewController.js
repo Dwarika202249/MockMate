@@ -305,16 +305,34 @@ exports.submitInterview = async (req, res) => {
 
     const averageScore = Math.round(totalScore / interview.questions.length);
 
-    // Save quick feedback document
+    // Save quick feedback document to the new Feedback collection using legacy fields to remain compatible
     const feedbackDoc = new FeedbackSummary({
       interviewId: interview._id,
-      questions: interview.questions.map((q) => q.text || ''),
-      answers: interview.questions.map((q, i) => (answers && answers[i]) || ''),
-      feedback: `Quick score: ${averageScore}. Basic feedback generated.`,
-      user: userId
+      user: userId,
+      source: 'local',
+      // store raw strings in legacy fields to avoid subdocument casting issues for quick feedback
+      legacy: {
+        rawQuestions: (interview.questions || []).map((q) => q.text || ''),
+        rawAnswers: (interview.questions || []).map((q, i) => (answers && answers[i]) || ''),
+        rawFeedback: `Quick score: ${averageScore}. Basic feedback generated.`,
+      },
+      // also populate summary for quick access
+      summary: {
+        averageScore,
+        perQuestionFeedback
+      }
     });
 
     await feedbackDoc.save();
+
+    // Ensure perQuestionFeedback is stored in the feedback.summary (some older schema versions lacked this)
+    try {
+      await FeedbackSummary.findByIdAndUpdate(feedbackDoc._id, {
+        $set: { 'summary.perQuestionFeedback': perQuestionFeedback }
+      }, { new: true, runValidators: false });
+    } catch (uerr) {
+      console.warn('Unable to persist perQuestionFeedback into Feedback summary:', uerr?.message || uerr);
+    }
 
     // Update interview status, answers, and summary using native update
     const updateResult = await Interview.findByIdAndUpdate(
