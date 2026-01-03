@@ -319,7 +319,7 @@ const Progress = () => {
       .join(" ");
 
     return (
-      <svg width={width} height={height} className="w-full h-full">
+      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" className="w-full h-auto">
         {/* Grid lines */}
         {[20, 40, 60, 80, 100].map((value) => {
           const y =
@@ -536,7 +536,7 @@ const Progress = () => {
 
             {/* Line Chart */}
             <div className="relative z-10 bg-white/5 backdrop-blur-md rounded-xl p-2 sm:p-4 overflow-x-auto border border-white/10">
-              <div className="min-w-[320px]">
+              <div className="min-w-[320px] min-h-[220px]">
                 <LineChart data={trendData} width={400} height={220} />
               </div>
             </div>
