@@ -38,7 +38,7 @@ const ResumePreviewModal = ({ isOpen, setIsOpen, editableData, onSave }) => {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-xl bg-[#201d33] p-6 text-left align-middle shadow-xl transition-all text-white">
+              <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-purple-500/20 p-6 text-left align-middle shadow-xl transition-all text-white">
                 <DialogTitle
                   as="h3"
                   className="text-lg font-semibold text-purple-300 mb-4"

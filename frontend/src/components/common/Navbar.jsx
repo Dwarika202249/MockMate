@@ -72,7 +72,7 @@ const Navbar = () => {
           <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl p-2 shadow-lg group-hover:scale-110 transition-transform duration-300">
             <span className="text-white font-bold text-lg">🦊</span>
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <span className="text-xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 bg-clip-text text-white">
             MockMate
           </span>
         </Link>

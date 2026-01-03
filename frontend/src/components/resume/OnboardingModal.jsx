@@ -121,33 +121,32 @@ const OnboardingModal = ({ onClose, onStart, resumeData }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
             <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }} 
+                initial={{ scale: 0.95, opacity: 0 }} 
                 animate={{ scale: 1, opacity: 1 }} 
-                exit={{ scale: 0.9, opacity: 0 }} 
-                className="bg-[#1a0f2e] rounded-xl shadow-xl w-full max-w-2xl p-6 mx-4"
+                exit={{ scale: 0.95, opacity: 0 }} 
+                className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-2xl w-full max-w-2xl p-6 mx-4 shadow-[0_12px_48px_rgba(168,85,247,0.12)]"
             >
                 {/* Progress Bar */}
-                <div className="flex mb-8">
-                    {[1, 2, 3].map((stepNum) => (
-                        <div key={stepNum} className="flex-1">
-                            <div className={`h-2 rounded-full transition-colors ${
-                                stepNum <= step ? 'bg-[#9589e6]' : 'bg-gray-600'
-                            }`} />
+                <div className="flex mb-6 items-center justify-between">
+                    <div className="flex-1 mr-4">
+                        <div className="h-2 rounded-full overflow-hidden bg-white/10">
+                            <div style={{ width: `${(step / 3) * 100}%` }} className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all" />
                         </div>
-                    ))}
+                    </div>
+                    <div className="text-sm text-gray-300">Step {step} of 3</div>
                 </div>
 
                 {/* Step Content */}
                 <div className="space-y-6">
                     {step === 1 && (
                         <div className="space-y-6">
-                            <h2 className="text-2xl font-bold text-[#9589e6] flex items-center">
-                                <FiUser className="mr-2" />
+                            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300 flex items-center">
+                                <FiUser className="mr-2 text-purple-300" />
                                 Resume Details (Auto-filled)
                             </h2>
-                            <div className="bg-green-900 bg-opacity-20 border border-green-700 rounded-lg p-4 mb-4">
+                            <div className="bg-green-900 bg-opacity-10 border border-green-700/20 rounded-lg p-4 mb-4">
                                 <p className="text-green-300 text-sm">✓ These details are auto-filled from your resume. You can edit them if needed.</p>
                             </div>
                             <div className="space-y-4">
@@ -159,7 +158,7 @@ const OnboardingModal = ({ onClose, onStart, resumeData }) => {
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => updateFormData('name', e.target.value)}
-                                        className="w-full px-4 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6] border border-gray-500 hover:border-green-700 transition-colors"
+                                        className="w-full px-4 py-2 bg-white/5 text-white rounded-lg focus:ring-2 focus:ring-purple-500/30 border border-purple-500/10 hover:border-purple-400 transition-colors"
                                         placeholder="Enter your full name"
                                     />
                                     {resumeData?.name && <p className="text-xs text-green-400 mt-1">✓ From Resume: {resumeData.name}</p>}

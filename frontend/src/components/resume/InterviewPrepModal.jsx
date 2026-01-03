@@ -35,12 +35,12 @@ const InterviewPrepModal = ({ isOpen, setIsOpen, onStart }) => {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-sm transform overflow-hidden rounded-2xl bg-[#201d33] px-6 py-8 text-left align-middle shadow-2xl transition-all text-white">
-                <DialogTitle as="h3" className="text-2xl font-semibold text-purple-300 text-center mb-6">
+              <DialogPanel className="w-full max-w-sm transform overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-purple-500/20 px-6 py-8 text-left align-middle shadow-2xl transition-all text-white">
+                <DialogTitle as="h3" className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300 text-center mb-6">
                   🎯 Interview Prep Guide
                 </DialogTitle>
 
-                <div className="space-y-4 text-sm text-purple-100">
+                <div className="space-y-4 text-sm text-gray-300">
                   <div className="flex items-start gap-3">
                     <UserIcon className="w-4 h-4 mt-1 text-purple-400" />
                     <p>Simulated AI interviewer will ask job-role-based questions.</p>
@@ -57,13 +57,13 @@ const InterviewPrepModal = ({ isOpen, setIsOpen, onStart }) => {
 
                 <div className="mt-8 flex flex-col space-y-3">
                   <button
-                    className="bg-gray-500 hover:bg-gray-600 text-white text-sm py-2 rounded-md"
+                    className="bg-white/5 hover:bg-white/10 text-white text-sm py-2 rounded-md"
                     onClick={() => setIsOpen(false)}
                   >
                     Cancel
                   </button>
                   <button
-                    className="bg-purple-900 hover:bg-purple-800 text-white text-sm py-2 rounded-md"
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm py-2 rounded-md"
                     onClick={() => {
                       setIsOpen(false);
                       onStart();

@@ -29,22 +29,22 @@ const PreparationScreen = ({ onReady, interviewData }) => {
     }, [countdown, onReady]);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1a0f2e]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="max-w-2xl w-full mx-4 text-center"
+                className="max-w-2xl w-full mx-4 text-center bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 shadow-[0_12px_48px_rgba(168,85,247,0.12)]"
             >
-                <h2 className="text-3xl font-bold text-[#9589e6] mb-8">
+                <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300 mb-6">
                     Preparing Your Interview
                 </h2>
                 
-                <div className="bg-[#2a1f3e] rounded-xl p-6 mb-8">
+                <div className="bg-white/5 p-6 rounded-2xl">
                     <div className="flex justify-center mb-6">
                         <motion.div 
-                            className="w-24 h-24 rounded-full bg-[#9589e6] flex items-center justify-center text-3xl font-bold text-white"
+                            className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-4xl font-bold text-white"
                             animate={{
-                                scale: [1, 1.2, 1],
+                                scale: [1, 1.08, 1],
                             }}
                             transition={{
                                 duration: 1,
@@ -65,10 +65,10 @@ const PreparationScreen = ({ onReady, interviewData }) => {
                                 key={index}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.2 }}
-                                className="bg-[#1a0f2e] p-4 rounded-lg flex items-center space-x-3"
+                                transition={{ delay: index * 0.15 }}
+                                className="p-4 rounded-xl flex items-center space-x-3 bg-white/5 border border-purple-500/10"
                             >
-                                <div className="text-[#9589e6]">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white">
                                     {tip.icon}
                                 </div>
                                 <p className="text-gray-300 text-sm">
@@ -79,7 +79,7 @@ const PreparationScreen = ({ onReady, interviewData }) => {
                     </div>
                 </div>
 
-                <div className="text-gray-400 text-sm">
+                <div className="text-gray-400 text-sm mt-6">
                     <FiClock className="inline mr-2" />
                     Expected duration: {interviewData.preferences.duration} minutes
                 </div>

@@ -4,7 +4,7 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { jsPDF } from "jspdf";
-import { FiDownload, FiSave } from "react-icons/fi";
+// removed unused export icons: FiDownload, FiSave
 import { MdClose } from "react-icons/md";
 import { toast } from "react-hot-toast";
 
@@ -24,6 +24,7 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("basic");
+  const [rightView, setRightView] = useState('featured');
   const [skillInput, setSkillInput] = useState("");
   const skillsInputRef = useRef(null);
   const navigate = useNavigate();
@@ -237,27 +238,27 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
   };
 
   const renderSection = (title, fields) => (
-    <div className="space-y-4 bg-[#1a0f2e] p-4 rounded-lg">
-      <h3 className="text-lg font-semibold text-[#9589e6]">{title}</h3>
+    <div className="space-y-4 bg-white/5 backdrop-blur-xl p-4 rounded-lg border border-purple-500/10">
+      <h3 className="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300">{title}</h3>
       {fields.map((field) => (
         <div key={field} className="space-y-2">
-          <label className="text-sm text-gray-300 capitalize">
+          <label className="text-xs tracking-wide text-purple-200 uppercase">
             {field.replace(/([A-Z])/g, " $1").trim()}
           </label>
           {field === "skills" ? (
             <div className="space-y-2">
               {/* Skills Chips Display */}
-              <div className="flex flex-wrap gap-2 p-3 bg-[#2a1f3e] rounded-lg min-h-[44px]">
+              <div className="flex flex-wrap gap-2 p-3 bg-white/5 rounded-lg min-h-[44px]">
                 {Array.isArray(editableData.skills) && editableData.skills.length > 0 ? (
                   editableData.skills.map((skill) => (
                     <div
                       key={skill}
-                      className="flex items-center gap-2 bg-[#9589e6] text-white px-3 py-1 rounded-full text-sm"
+                      className="flex items-center gap-2 bg-gradient-to-br from-purple-600 to-indigo-600 text-white px-3 py-1 rounded-full text-sm"
                     >
                       <span>{skill}</span>
                       <button
                         onClick={() => handleRemoveSkill(skill)}
-                        className="hover:bg-[#7c6ed6] rounded-full p-0.5 transition-colors"
+                        className="hover:opacity-80 rounded-full p-0.5 transition-colors"
                       >
                         <MdClose size={16} />
                       </button>
@@ -276,11 +277,11 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
                   value={skillInput}
                   onChange={(e) => setSkillInput(e.target.value)}
                   onKeyDown={handleAddSkill}
-                  className="flex-1 px-3 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6] placeholder-gray-500"
+                  className="flex-1 px-3 py-2 bg-white/5 text-white rounded-lg focus:ring-2 focus:ring-purple-500 placeholder-gray-500"
                 />
                 <button
                   onClick={handleAddSkill}
-                  className="px-4 py-2 bg-[#9589e6] text-white rounded-lg hover:bg-[#7c6ed6] transition-colors font-medium"
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-colors font-medium"
                 >
                   Add
                 </button>
@@ -291,7 +292,7 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
               name={field}
               value={editableData[field] || ""}
               onChange={handleInputChange}
-              className="w-full h-32 px-3 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6] resize-none"
+              className="w-full h-32 px-3 py-2 bg-white/5 text-white rounded-lg focus:ring-2 focus:ring-purple-500 resize-none"
             />
           ) : (
             <input
@@ -299,7 +300,7 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
               name={field}
               value={editableData[field] || ""}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-[#2a1f3e] text-white rounded-lg focus:ring-2 focus:ring-[#9589e6]"
+              className="w-full px-3 py-2 bg-white/5 text-white rounded-lg focus:ring-2 focus:ring-purple-500"
             />
           )}
         </div>
@@ -309,153 +310,108 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
 
   return (
     <>
-      <div className="flex flex-col md:flex-row gap-6 px-4">
-        {/* Left: Editable Parsed Resume */}
-        <div className="w-full md:w-1/2 space-y-4">
-          <div className="sticky top-0 z-10 bg-[#0a061c] pb-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-[#9589e6]">
-                Resume Review
-              </h2>
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleSave}
-                  disabled={loading}
-                  className="flex items-center px-4 py-2 bg-[#9589e6] text-white rounded-lg hover:bg-[#7c6ed6] transition-colors disabled:opacity-50"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                  ) : (
-                    <>
-                      <FiSave className="mr-2" />
-                      Save
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleDownloadPDF}
-                  className="flex items-center px-4 py-2 border border-[#9589e6] text-[#9589e6] rounded-lg hover:bg-[#9589e6] hover:text-white transition-colors"
-                >
-                  <FiDownload className="mr-2" />
-                  Export
-                </button>
+      <div className="flex flex-col gap-6 px-4 md:h-[min(80vh,calc(100vh-200px))] h-auto">
+        <div className="w-full space-y-4 md:h-full h-auto md:overflow-y-auto pr-2">
+          <div className="sticky top-0 z-10 bg-transparent pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-[#9589e6]">Resume Review</h2>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setRightView('featured')} className={`px-3 py-1 rounded-full ${rightView === 'featured' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white' : 'bg-white/5 text-gray-300'}`}>Featured</button>
+                <button onClick={() => setRightView('original')} className={`px-3 py-1 rounded-full ${rightView === 'original' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white' : 'bg-white/5 text-gray-300'}`}>Original Resume</button>
               </div>
             </div>
 
-            <div className="flex space-x-2 overflow-x-auto pb-2">
-              {["basic", "experience", "education", "skills"].map((section) => (
-                <button
-                  key={section}
-                  onClick={() => setActiveSection(section)}
-                  className={`px-4 py-2 rounded-lg capitalize whitespace-nowrap transition-colors ${
-                    activeSection === section
-                      ? "bg-[#9589e6] text-white"
-                      : "bg-[#2a1f3e] text-gray-300 hover:bg-[#3a2f4e]"
-                  }`}
-                >
-                  {section}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
-            {activeSection === "basic" &&
-              renderSection("Basic Information", [
-                "name",
-                "email",
-                "phone",
-                "skills",
-                "education",
-                "summary",
-              ])}
-            {activeSection === "experience" &&
-              renderSection("Professional Experience", ["experience"])}
-            {activeSection === "education" &&
-              renderSection("Education", ["education", "certifications"])}
-            {activeSection === "skills" &&
-              renderSection("Skills & Expertise", ["skills", "languages"])}
-          </div>
-        </div>
-
-        {/* Right: PDF Resume Preview */}
-        <div className="w-full md:w-1/2 mx-4 max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 z-10 bg-[#0e031a] pb-2">
-            <h2 className="text-xl font-semibold mb-2 text-white">
-              Original Resume Preview
-            </h2>
-          </div>
-          <div className="border shadow rounded p-2 space-y-3 bg-[#201d33] text-white">
-            {/* Pagination Controls */}
-            <div className="flex justify-between items-center mb-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage <= 1}
-                className="bg-purple-900 text-white px-3 py-1 rounded disabled:opacity-50"
-              >
-                ⬅ Prev
-              </button>
-
-              <p className="text-sm">
-                Page <span className="font-bold">{currentPage}</span> of{" "}
-                <span className="font-bold">{numPages || "..."}</span>
-              </p>
-
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, numPages))
-                }
-                disabled={currentPage >= numPages}
-                className="bg-purple-900 text-white px-3 py-1 rounded disabled:opacity-50"
-              >
-                Next ➡
-              </button>
-            </div>
-
-            {/* PDF Document */}
-            <div className="border shadow rounded p-2 bg-[#0e031a]">
-              {/* Zoom Controls */}
-              <div className="flex justify-center gap-4 mb-3">
-                <button
-                  onClick={() =>
-                    setZoomLevel((prev) => Math.max(prev - 0.2, 0.6))
-                  }
-                  className="bg-purple-900 text-white px-3 py-1 rounded disabled:opacity-50"
-                >
-                  ➖
-                </button>
-                <span className="text-white font-medium">
-                  Zoom: {(zoomLevel * 100).toFixed(0)}%
-                </span>
-                <button
-                  onClick={() =>
-                    setZoomLevel((prev) => Math.min(prev + 0.2, 2))
-                  }
-                  className="bg-purple-900 text-white px-3 py-1 rounded disabled:opacity-50"
-                >
-                  ➕
-                </button>
+            {rightView === 'featured' && (
+              <div className="flex space-x-2 overflow-x-auto pb-2">
+                {["basic", "experience", "education", "skills"].map((section) => (
+                  <button
+                    key={section}
+                    onClick={() => setActiveSection(section)}
+                    className={`px-4 py-2 rounded-lg capitalize whitespace-nowrap transition-colors ${
+                      activeSection === section
+                        ? "bg-[#9589e6] text-white"
+                        : "bg-[#2a1f3e] text-gray-300 hover:bg-[#3a2f4e]"
+                    }`}
+                  >
+                    {section}
+                  </button>
+                ))}
               </div>
+            )}
+          </div>
 
-              {/* PDF Display */}
-              <div className="border rounded overflow-auto max-h-[600px]">
-                <Document
-                  file={pdfUrl}
-                  onLoadSuccess={({ numPages }) => {
-                    setNumPages(numPages);
-                    setCurrentPage(1);
-                  }}
-                  loading={<p className="text-white">Loading PDF...</p>}
-                >
-                  <Page
-                    pageNumber={currentPage}
-                    scale={zoomLevel}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                  />
-                </Document>
+          <div className="space-y-6 max-h-[calc(100vh-160px)] md:max-h-[calc(100vh-240px)] overflow-y-auto pr-2">
+            {rightView === 'featured' ? (
+              <>
+                {activeSection === "basic" && renderSection("Basic Information", ["name","email","phone","skills","education","summary"])}
+                {activeSection === "experience" && renderSection("Professional Experience", ["experience"])}
+                {activeSection === "education" && renderSection("Education", ["education","certifications"])}
+                {activeSection === "skills" && renderSection("Skills & Expertise", ["skills","languages"])}
+              </>
+            ) : (
+              <div className="bg-white/5 border border-purple-500/10 rounded-lg overflow-auto max-h-[50vh] md:max-h-[600px] p-3">
+                {/* Pagination Controls */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage <= 1}
+                      className="bg-white/5 text-white px-3 py-1 rounded disabled:opacity-50 border border-purple-500/10"
+                    >
+                      ⬅ Prev
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, numPages || prev + 1))}
+                      disabled={!numPages || currentPage >= numPages}
+                      className="bg-white/5 text-white px-3 py-1 rounded disabled:opacity-50 border border-purple-500/10"
+                    >
+                      Next ➡
+                    </button>
+                  </div>
+
+                  <p className="text-sm text-gray-300">
+                    Page <span className="font-bold text-white">{currentPage}</span> of <span className="font-bold text-white">{numPages || "..."}</span>
+                  </p>
+                </div>
+
+                {/* Zoom Controls */}
+                <div className="flex justify-center gap-4 mb-3">
+                  <button
+                    onClick={() => setZoomLevel((prev) => Math.max(prev - 0.2, 0.6))}
+                    className="bg-white/5 text-white px-3 py-1 rounded disabled:opacity-50 border border-purple-500/10"
+                  >
+                    ➖
+                  </button>
+                  <span className="text-white font-medium">Zoom: {(zoomLevel * 100).toFixed(0)}%</span>
+                  <button
+                    onClick={() => setZoomLevel((prev) => Math.min(prev + 0.2, 2))}
+                    className="bg-white/5 text-white px-3 py-1 rounded disabled:opacity-50 border border-purple-500/10"
+                  >
+                    ➕
+                  </button>
+                </div>
+
+                {/* PDF Display */}
+                <div className="border rounded overflow-auto max-h-[45vh] md:max-h-[600px] bg-[#0e031a] p-2">
+                  <Document
+                    file={pdfUrl}
+                    onLoadSuccess={({ numPages }) => {
+                      setNumPages(numPages);
+                      setCurrentPage(1);
+                    }}
+                    loading={<p className="text-white">Loading PDF...</p>}
+                  >
+                    <Page
+                      pageNumber={currentPage}
+                      scale={zoomLevel}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                    />
+                  </Document>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -464,7 +420,7 @@ const ResumeReview = ({ parsedData, pdfUrl, resumeText }) => {
       <div className="flex gap-2 m-5">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-purple-900 text-white px-4 py-2 rounded hover:bg-purple-800"
+          className="w-full md:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-3 rounded-lg hover:shadow-lg"
         >
           Next
         </button>

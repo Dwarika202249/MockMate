@@ -6,7 +6,6 @@ import AvatarStage from "../../components/resume/AvatarStage";
 import ChatPanel from "../../components/resume/ChatPanel";
 import OnboardingModal from "../../components/resume/OnboardingModal";
 import PreparationScreen from "../../components/resume/PreparationScreen";
-import AnswerEvaluator from "../../utils/AnswerEvaluator";
 import Loader from "../../components/common/Loader";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import InterviewService from "../../services/InterviewService";
@@ -545,24 +544,25 @@ const ResumeInterviewPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0e031a] p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0118] via-[#1a0b2e] to-[#0f0520] p-6">
       <div className="max-w-7xl mx-auto grid grid-cols-12 gap-6">
         {/* Left side: Interview */}
         <div className="col-span-12 md:col-span-8 space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#824fb8] rounded-lg shadow p-4"
+            className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 shadow-[0_8px_32px_rgba(168,85,247,0.06)]"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-white">Live Interview</h3>
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-gray-100">
-                  Q {currentIndex + 1} / {questions.length}
+              <h3 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300">Live Interview</h3>
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-gray-300">
+                  <div className="text-xs text-gray-400">Q {currentIndex + 1} / {questions.length}</div>
+                  <div className="text-xs text-gray-400">AI: {aiSpeaking ? 'Speaking' : 'Idle'}</div>
                 </div>
                 <button
                   onClick={() => setShowEndModal(true)}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  className="py-2 px-3 rounded-xl bg-white/5 border border-purple-500/20 text-white hover:bg-white/10 transition"
                 >
                   Pause
                 </button>
@@ -570,18 +570,18 @@ const ResumeInterviewPage = () => {
             </div>
 
             {/* Quick stats */}
-            <div className="flex justify-between items-center bg-gray-100 p-3 rounded mt-4">
-              <div className="text-sm text-gray-600">
-                <span className="text-green-600 font-bold">Answered:</span>{" "}
-                {Object.keys(answers).length}
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="p-3 bg-white/5 border border-purple-500/10 rounded-lg text-center">
+                <div className="text-sm text-gray-300">Answered</div>
+                <div className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">{Object.keys(answers).length}</div>
               </div>
-              <div className="text-sm text-gray-600">
-                <span className="text-yellow-600 font-bold">Progress:</span>{" "}
-                {Math.round((Object.keys(answers).length / questions.length) * 100)}%
+              <div className="p-3 bg-white/5 border border-purple-500/10 rounded-lg text-center">
+                <div className="text-sm text-gray-300">Progress</div>
+                <div className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400">{isFinite(questions.length) && questions.length>0 ? Math.round((Object.keys(answers).length / questions.length) * 100) : 0}%</div>
               </div>
-              <div className="text-sm text-gray-800">
-                <span className="text-blue-600 font-bold">Listening:</span>{" "}
-                {listeningLive ? "Yes" : "No"}
+              <div className="p-3 bg-white/5 border border-purple-500/10 rounded-lg text-center">
+                <div className="text-sm text-gray-300">Listening</div>
+                <div className={`text-lg font-bold ${listeningLive ? 'text-green-400' : 'text-gray-400'}`}>{listeningLive ? 'Yes' : 'No'}</div>
               </div>
             </div>
 
