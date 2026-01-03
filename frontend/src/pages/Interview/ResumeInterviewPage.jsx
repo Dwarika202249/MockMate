@@ -97,6 +97,14 @@ const ResumeInterviewPage = () => {
     synth.speak(utter);
   };
 
+  // Format seconds to MM:SS
+  const formatTime = (seconds) => {
+    const s = Math.max(0, Math.floor(Number(seconds) || 0));
+    const mm = Math.floor(s / 60);
+    const ss = s % 60;
+    return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     if (!browserSupportsSpeechRecognition) {
       console.warn("SpeechRecognition not supported.");
@@ -404,6 +412,7 @@ const ResumeInterviewPage = () => {
       
       setIsProcessing(false);
       setRunning(false);
+      setIsTimerActive(false);
       
       // Show outro message if provided, or generate a default one
       const outro = outroMessage || "Thank you for taking the time to interview with me today. You've demonstrated great skills and insight. We'll review your responses carefully and get back to you soon. Good luck!";
@@ -493,6 +502,30 @@ const ResumeInterviewPage = () => {
     const t = setInterval(() => setElapsedTime((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [isTimerActive]);
+
+  // End interview when timer reaches configured duration
+  useEffect(() => {
+    if (!isTimerActive || !durationMinutes) return;
+
+    const durationSeconds = Number(durationMinutes) * 60;
+    if (elapsedTime >= durationSeconds) {
+      // Prevent multiple triggers
+      setIsTimerActive(false);
+      // Finalize any live transcript and stop audio
+      stopListening();
+      finalizeLiveUserBubble(transcript || "");
+      resetTranscript();
+
+      setIsProcessing(true);
+      try {
+        emit && emit('END_INTERVIEW', { interviewId });
+      } catch (err) {
+        console.error('Failed to emit END_INTERVIEW:', err?.message || err);
+        setIsProcessing(false);
+      }
+    }
+  }, [elapsedTime, isTimerActive, durationMinutes, emit, interviewId, transcript]);
+
 
   const pushAIMessage = async (text) => {
     messageCounterRef.current += 1;
@@ -727,6 +760,10 @@ const ResumeInterviewPage = () => {
     return <PreparationScreen onReady={handlePreparationComplete} interviewData={interviewData} durationMinutes={durationMinutes} />;
   }
 
+  // Compute remaining seconds for timer-driven UI
+  const remainingSeconds = durationMinutes ? Math.max(0, Number(durationMinutes) * 60 - elapsedTime) : null;
+  const endingSoon = isTimerActive && remainingSeconds !== null && remainingSeconds <= 10 && remainingSeconds > 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0118] via-[#1a0b2e] to-[#0f0520] p-6">
       <div className="max-w-7xl mx-auto grid grid-cols-12 gap-6">
@@ -754,7 +791,14 @@ const ResumeInterviewPage = () => {
             </div>
 
             {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-3 mt-4">
+            {endingSoon && (
+              <div className="mt-4">
+                <div className="bg-red-600 text-white px-3 py-2 rounded-md animate-pulse text-sm font-semibold flex items-center justify-center">
+                  ⚠️ Ending soon: {formatTime(remainingSeconds)}
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-4">
               <div className="p-3 bg-white/5 border border-purple-500/10 rounded-lg text-center">
                 <div className="text-sm text-gray-300">Answered</div>
                 <div className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">{Object.keys(answers).length}</div>
@@ -766,6 +810,21 @@ const ResumeInterviewPage = () => {
               <div className="p-3 bg-white/5 border border-purple-500/10 rounded-lg text-center">
                 <div className="text-sm text-gray-300">Listening</div>
                 <div className={`text-lg font-bold ${listeningLive ? 'text-green-400' : 'text-gray-400'}`}>{listeningLive ? 'Yes' : 'No'}</div>
+              </div>
+              <div className="p-3 bg-white/5 border border-purple-500/10 rounded-lg text-center">
+                <div className="text-sm text-gray-300">Time Left</div>
+                <div className={`text-lg font-bold ${endingSoon ? 'text-red-300' : 'text-white'}`}>
+                  {durationMinutes ? (
+                    (() => {
+                      const total = Number(durationMinutes) * 60;
+                      const remaining = Math.max(0, total - elapsedTime);
+                      return formatTime(remaining);
+                    })()
+                  ) : (
+                    <span className="text-gray-400">--:--</span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-400 mt-1">{isTimerActive ? `Elapsed ${formatTime(elapsedTime)}` : `${durationMinutes || '-'} min scheduled`}</div>
               </div>
             </div>
 

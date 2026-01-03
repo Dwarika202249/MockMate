@@ -11,7 +11,7 @@ const ChatPanel = ({ messages = [] }) => {
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 h-[70vh] overflow-y-auto flex flex-col shadow-[0_8px_32px_rgba(168,85,247,0.08)]">
-      <div className="flex items-center justify-between mb-3">
+      <div className="sticky top-0 z-20 bg-white/5 backdrop-blur-xl px-4 py-3 rounded-t-2xl flex items-center justify-between">
         <h4 className="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-indigo-300">
           Live Conversation
         </h4>
@@ -25,7 +25,7 @@ const ChatPanel = ({ messages = [] }) => {
         </div>
       </div>
 
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 space-y-4 mt-3 pt-1">
         {messages.map((m) => (
           <motion.div
             key={m.id}

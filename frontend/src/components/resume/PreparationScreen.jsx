@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiClock, FiMic, FiVideo, FiSmile, FiPlay, FiX } from 'react-icons/fi';
 
 const PreparationScreen = ({ onReady, interviewData, durationMinutes, onCancel }) => {
+    const navigate = useNavigate();
     const [countdown, setCountdown] = useState(5);
     const displayDuration = durationMinutes ?? interviewData?.preferences?.duration ?? 30;
+
+    const handleCancel = onCancel || (() => navigate('/dashboard'));
     const [tips] = useState([
         {
             icon: <FiSmile className="w-6 h-6" />,
@@ -51,61 +55,58 @@ const PreparationScreen = ({ onReady, interviewData, durationMinutes, onCancel }
                             <div className="text-sm text-gray-400 mr-4">
                                 <FiClock className="inline mr-1" /> {displayDuration} min
                             </div>
-                            {onCancel && (
-                                <button onClick={onCancel} className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white/6 text-white border border-white/6">
-                                    <FiX className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Cancel</span>
-                                </button>
-                            )}
+                            {/* Desktop Cancel — always visible and falls back to navigate/dashboard */}
+                            <button onClick={handleCancel} className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white/6 text-white border border-white/6">
+                                <FiX className="w-4 h-4" />
+                                <span className="hidden sm:inline">Cancel</span>
+                            </button>
                         </div>
                     </div>
 
                     {/* Cancel button for very small screens (top-right) */}
-                    {onCancel && (
-                        <button onClick={onCancel} className="absolute top-3 right-3 sm:hidden text-white p-2 rounded-lg bg-white/6 border border-white/6 z-30">
-                            <FiX className="w-4 h-4" />
-                        </button>
-                    )}
+                    {/* Small-screen cancel (icon-only) */}
+                    <button onClick={handleCancel} className="absolute top-3 right-3 sm:hidden text-white p-2 rounded-lg bg-white/6 border border-white/6 z-30">
+                        <FiX className="w-4 h-4" />
+                    </button>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-center min-h-0">
-                    {/* Responsive preparation layout */}
-                    <div className="col-span-1 md:col-span-1 flex flex-col items-center md:items-start space-y-3 min-h-0">
-                        <motion.div 
-                            className="w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-4xl sm:text-5xl md:text-5xl font-bold text-white flex-shrink-0"
-                            animate={{ scale: [1, 1.06, 1] }}
-                            transition={{ duration: 1.1, repeat: Infinity }}
-                            aria-hidden
-                        >
-                            <span className="sr-only">Countdown</span>
-                            {countdown}
-                        </motion.div>
+                {/* Centered clock + actions (placed under the header) */}
+                <div className="mt-6 flex justify-center">
+                  <div className="flex flex-col items-center text-center">
+                    <motion.div
+                      className="w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-4xl sm:text-5xl md:text-5xl font-bold text-white"
+                      animate={{ scale: [1, 1.06, 1] }}
+                      transition={{ duration: 1.1, repeat: Infinity }}
+                      aria-hidden={true}
+                    >
+                      <span className="sr-only">Countdown</span>
+                      {countdown}
+                    </motion.div>
 
-                        <div className="mt-2 text-center md:text-left text-gray-300 text-sm">
-                            <div className="text-sm">Your interview will begin in</div>
-                            <div className="text-lg sm:text-xl md:text-2xl font-semibold text-white mt-1">{countdown} seconds</div>
-                        </div>
-
-                        <div className="mt-3 w-full md:w-auto flex flex-col sm:flex-row gap-3">
-                            <button
-                                onClick={() => onReady()}
-                                className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold shadow-lg hover:brightness-105 transition"
-                            >
-                                <FiPlay /> Start now
-                            </button>
-
-                            {onCancel && (
-                                <button
-                                    onClick={onCancel}
-                                    className="w-full sm:w-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-gray-200 hover:bg-white/6 transition"
-                                >
-                                    <FiX /> Cancel
-                                </button>
-                            )}
-                        </div>
+                    <div className="mt-4 text-center text-gray-300 text-sm">
+                      <div className="text-sm">Your interview will begin in</div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-semibold text-white mt-1">{countdown} seconds</div>
                     </div>
 
-                    <div className="col-span-1 md:col-span-2 flex flex-col min-h-0">
+                    <div className="mt-3 w-full md:w-auto flex flex-col sm:flex-row gap-3 justify-center">
+                      <button
+                        onClick={() => onReady()}
+                        className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold shadow-lg hover:brightness-105 transition"
+                      >
+                        <FiPlay /> Start now
+                      </button>
+
+                      <button
+                        onClick={handleCancel}
+                        className="w-full sm:w-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-gray-200 hover:bg-white/6 transition"
+                      >
+                        <FiX /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                    <div className="col-span-1 md:col-span-2 flex flex-col min-h-0 mt-5">
                         <div className="flex flex-col md:flex-row gap-3 items-stretch justify-between">
                             {tips.map((tip, index) => (
                                 <motion.div
@@ -130,7 +131,6 @@ const PreparationScreen = ({ onReady, interviewData, durationMinutes, onCancel }
                             <FiClock className="inline" /> Expected duration: <span className="ml-2 text-white font-medium">{displayDuration} minutes</span>
                         </div>
                     </div>
-                </div>
             </motion.div>
         </div>
     );

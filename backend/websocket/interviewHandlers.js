@@ -431,6 +431,85 @@ const interviewHandlers = {
             console.error('Error in PAUSE_INTERVIEW:', error);
             socket.emit('ERROR', { message: 'Failed to pause interview' });
         }
+    },
+
+    // End interview (timer expiry or manual end)
+    END_INTERVIEW: async (io, socket, data) => {
+        try {
+            const { interviewId } = data;
+            const interview = await Interview.findById(interviewId).lean();
+
+            if (!interview) {
+                socket.emit('ERROR', { message: 'Interview not found' });
+                return;
+            }
+
+            if (interview.status === 'completed') {
+                // Already completed
+                socket.emit('INFO', { message: 'Interview already completed' });
+                return;
+            }
+
+            // Atomically reserve summary credits to avoid double-charge
+            const reservedSummary = await Interview.findOneAndUpdate(
+                { _id: interviewId, summaryCreditsConsumed: { $ne: true } },
+                { $set: { summaryCreditsConsumed: true } },
+                { new: false }
+            );
+
+            if (reservedSummary) {
+                const interviewType = interview.type || 'resume';
+                await consumeSummaryCredits(
+                    interview.user,
+                    interviewId,
+                    interviewType
+                );
+            } else {
+                // credits might have been consumed already; continue
+            }
+
+            // Generate interview summary
+            const summary = await generateSummaryWithFailover({
+                questions: interview.questions || [],
+                answers: interview.answers || [],
+                duration: interview.endTime && interview.startTime ? (interview.endTime - interview.startTime) / 1000 : 0
+            });
+
+            // Calculate overall score for outro message
+            const allAnswers = [...(interview.answers || [])];
+            const overallScore = allAnswers.length ? (allAnswers.reduce((sum, ans) => sum + (ans.feedback?.score || 0), 0) / allAnswers.length) : 0;
+            let outroMessage = "Thank you for taking the time to interview with me today. We've captured your responses and will review them carefully. Good luck!";
+
+            if (overallScore >= 80) {
+                outroMessage = `Excellent performance! You've shown outstanding skills and expertise throughout this interview. Thank you!`;
+            } else if (overallScore >= 60) {
+                outroMessage = `Good work today! You've demonstrated solid understanding and skills. We'll be in touch soon.`;
+            }
+
+            await Interview.findByIdAndUpdate(
+                interviewId,
+                {
+                    summary,
+                    outroMessage: {
+                        text: outroMessage,
+                        delivered: false,
+                        timestamp: new Date()
+                    },
+                    status: 'completed',
+                    endTime: new Date()
+                },
+                { new: true }
+            );
+
+            // Emit completion to participants
+            io.to(`interview-${interviewId}`).emit('INTERVIEW_COMPLETED', {
+                summary,
+                outroMessage
+            });
+        } catch (error) {
+            console.error('Error in END_INTERVIEW:', error);
+            socket.emit('ERROR', { message: 'Failed to end interview' });
+        }
     }
 };
 
