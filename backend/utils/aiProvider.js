@@ -11,6 +11,7 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL_QUESTIONS = 'llama-3.1-8b-instant';
 const GROQ_MODEL_EVAL = 'llama-3.3-70b-versatile';
+const { normalizeSummary } = require('./summaryNormalizer');
 
 // Pre-stored question dataset for Tier 2 fallback
 const PRE_STORED_QUESTIONS = {
@@ -179,11 +180,20 @@ Return ONLY a valid JSON array, no other text or markdown:
         if (jsonMatch) {
             const questions = JSON.parse(jsonMatch[0]);
             if (Array.isArray(questions) && questions.length > 0) {
-                // CRITICAL: Validate each question is an object, not a string
-                const validQuestions = questions.filter(q => typeof q === 'object' && q !== null && !Array.isArray(q));
+                // If provider returned an array of strings, convert to question objects gracefully
+                const normalized = questions.map((q, idx) => {
+                    if (typeof q === 'string') {
+                        console.warn('⚠️  Groq returned a string item for question, converting to object:', q.substring(0, 80));
+                        return { id: `q${idx + 1}`, text: q };
+                    }
+                    return q;
+                });
+
+                // CRITICAL: Validate each question is an object with at least text
+                const validQuestions = normalized.filter(q => typeof q === 'object' && q !== null && !Array.isArray(q) && q.text);
                 
                 if (validQuestions.length === 0) {
-                    console.warn('⚠️  Groq returned array but items are not objects:', questions.map(q => typeof q));
+                    console.warn('⚠️  Groq returned array but items are not valid question objects:', questions.map(q => typeof q));
                     return null; // Force fallback to Tier 2
                 }
                 
@@ -282,17 +292,28 @@ function formatQuestionsForSchema(questions) {
 // ============================================
 
 async function generateQuestionsWithFailover(resumeText, role, numQuestions = 5, difficulty = 'medium') {
-    let result = null;
+    let result = [];
 
     // Tier 1: Try Groq API
     let questions = await generateWithGroq(resumeText, role, numQuestions, difficulty);
-    if (questions && questions.length > 0) {
-        result = questions;
-    } else {
-        // Tier 2: Use Pre-stored Dataset
-        questions = generateWithStoredDataset(role, numQuestions, difficulty);
-        if (questions && questions.length > 0) {
-            result = questions;
+    if (Array.isArray(questions) && questions.length > 0) {
+        result = questions.slice();
+    }
+
+    // If Tier1 returned fewer than requested, top-up with pre-stored dataset
+    if (result.length < numQuestions) {
+        const needed = numQuestions - result.length;
+        const stored = generateWithStoredDataset(role, needed, difficulty);
+        if (Array.isArray(stored) && stored.length > 0) {
+            result = result.concat(stored);
+        }
+    }
+
+    // If still empty or insufficient, attempt using the stored dataset only (fallback)
+    if (!result || result.length === 0) {
+        const fallback = generateWithStoredDataset(role, numQuestions, difficulty);
+        if (Array.isArray(fallback) && fallback.length > 0) {
+            result = fallback;
         }
     }
 
@@ -300,23 +321,32 @@ async function generateQuestionsWithFailover(resumeText, role, numQuestions = 5,
         throw new Error('All AI provider tiers failed to generate questions');
     }
 
-    // CRITICAL VALIDATION: Ensure all items are objects, not strings
-    const validatedResult = result.filter(q => {
+    // CRITICAL VALIDATION: Ensure all items are objects with at least text
+    const validatedResult = result.map((q, idx) => {
+        // If it's a string, convert to object
+        if (typeof q === 'string') return { id: `q${idx + 1}`, text: q };
+        return q;
+    }).filter(q => {
         const isValid = typeof q === 'object' && q !== null && !Array.isArray(q) && q.text;
         if (!isValid) {
             console.warn('⚠️  Filtering out invalid question:', typeof q, JSON.stringify(q).substring(0, 100));
         }
         return isValid;
     });
-    
+
     if (validatedResult.length === 0) {
         throw new Error('All generated questions failed validation - no valid objects found');
     }
-    
-    // CRITICAL: Ensure exact number of questions requested
+
+    // CRITICAL: Ensure exact number of questions requested - slice to requested size
     const exactCount = validatedResult.slice(0, numQuestions);
-    
-    return exactCount;
+
+    if (exactCount.length < numQuestions) {
+        console.warn(`⚠️  Requested ${numQuestions} questions but only ${exactCount.length} could be generated. Consider retrying or increasing fallback pool.`);
+    }
+
+    // Ensure difficulty is set to the requested difficulty by default
+    return exactCount.map(q => ({ ...q, difficulty: q.difficulty || difficulty }));
 }
 
 // ============================================
@@ -393,7 +423,7 @@ async function generateSummaryWithFailover(interviewData) {
     if (groqSummary) {
         console.log('✅ Tier 1 Success: Generated summary with Groq API');
         console.log('═══════════════════════════════════════════════════════\n');
-        return groqSummary;
+        return normalizeSummary(groqSummary);
     }
 
     // Tier 2: Local Generation
@@ -401,7 +431,7 @@ async function generateSummaryWithFailover(interviewData) {
     const localSummary = generateSummaryLocal(interviewData);
     console.log('✅ Tier 2 Success: Generated local summary');
     console.log('═══════════════════════════════════════════════════════\n');
-    return localSummary;
+    return normalizeSummary(localSummary);
 }
 
 async function generateSummaryWithGroq(interviewData) {

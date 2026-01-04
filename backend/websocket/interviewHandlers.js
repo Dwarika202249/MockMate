@@ -8,6 +8,7 @@ const {
     consumeSummaryCredits 
 } = require('../utils/creditManager');
 const Feedback = require('../models/FeedbackSchema');
+const { normalizeSummary } = require('../utils/summaryNormalizer');
 
 // WebSocket event handlers for interview flow
 const interviewHandlers = {
@@ -87,7 +88,8 @@ const interviewHandlers = {
                                 id: question.id || `q${idx + 1}`,
                                 text: question.text || '',
                                 type: question.type || question.topic || 'Technical',
-                                difficulty: question.difficulty || difficulty || 'medium',
+                                // Prefer requested difficulty to ensure UX matches user's choice
+                                difficulty: difficulty || question.difficulty || 'medium',
                                 expectedKeywords: Array.isArray(question.expectedKeywords) 
                                     ? question.expectedKeywords 
                                     : (Array.isArray(question.expected_keywords) ? question.expected_keywords : []),
@@ -285,6 +287,7 @@ const interviewHandlers = {
                         answers: [...(interviewForQuestions.answers || []), newAnswer],
                         duration: interviewForQuestions.endTime ? (interviewForQuestions.endTime - interviewForQuestions.startTime) / 1000 : 0
                     });
+                    const normalizedSummary = normalizeSummary(summary);
                     
                     // Calculate overall score for outro message
                     const allAnswers = [...(interviewForQuestions.answers || []), newAnswer];
@@ -304,7 +307,7 @@ const interviewHandlers = {
                         interviewId,
                         {
                             $push: { answers: newAnswer },
-                            summary,
+                            summary: normalizedSummary,
                             outroMessage: {
                                 text: outroMessage,
                                 delivered: false,
@@ -324,7 +327,7 @@ const interviewHandlers = {
                     });
 
                     io.to(`interview-${interviewId}`).emit('INTERVIEW_COMPLETED', {
-                        summary,
+                        summary: normalizedSummary,
                         outroMessage
                     });
                 } else {
@@ -476,6 +479,8 @@ const interviewHandlers = {
                 duration: interview.endTime && interview.startTime ? (interview.endTime - interview.startTime) / 1000 : 0
             });
 
+            const normalizedSummary = normalizeSummary(summary);
+
             // Calculate overall score for outro message
             const allAnswers = [...(interview.answers || [])];
             const overallScore = allAnswers.length ? (allAnswers.reduce((sum, ans) => sum + (ans.feedback?.score || 0), 0) / allAnswers.length) : 0;
@@ -490,7 +495,7 @@ const interviewHandlers = {
             await Interview.findByIdAndUpdate(
                 interviewId,
                 {
-                    summary,
+                    summary: normalizedSummary,
                     outroMessage: {
                         text: outroMessage,
                         delivered: false,
@@ -528,7 +533,7 @@ const interviewHandlers = {
                             feedbackText: a.feedback?.feedback || ''
                         }
                     })),
-                    summary: summary || {},
+                    summary: normalizedSummary || {},
                     legacy: {
                         rawQuestions: (interview.questions || []).map((q) => q.text || q),
                         rawAnswers: (interview.answers || []).map((a) => a.text || ''),
@@ -536,6 +541,7 @@ const interviewHandlers = {
                     }
                 };
 
+                // Upsert feedback document idempotently and return it
                 const feedbackDoc = await Feedback.findOneAndUpdate(
                     { interviewId: interviewId },
                     { $set: feedbackPayload, $inc: { version: 1 } },
@@ -544,7 +550,7 @@ const interviewHandlers = {
 
                 // Emit completion to participants including feedback id
                 io.to(`interview-${interviewId}`).emit('INTERVIEW_COMPLETED', {
-                    summary,
+                    summary: normalizedSummary,
                     outroMessage,
                     feedbackId: feedbackDoc._id
                 });

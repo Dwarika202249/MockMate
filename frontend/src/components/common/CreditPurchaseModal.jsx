@@ -11,27 +11,27 @@ const CreditPurchaseModal = ({ show, onClose, currentBalance }) => {
     {
       id: 'basic',
       name: 'Basic Pack',
-      credits: 200,
-      price: 9.99,
+      credits: 100,
+      price: 5,
       popular: false,
-      interviews: '10 interviews'
+      interviews: '~5 interviews'
     },
     {
       id: 'pro',
       name: 'Pro Pack',
-      credits: 500,
-      price: 19.99,
+      credits: 250,
+      price: 10,
       popular: true,
-      interviews: '25 interviews',
-      savings: '20% OFF'
+      interviews: '~12-15 Full interviews',
+      savings: '17% OFF'
     },
     {
       id: 'premium',
       name: 'Premium Pack',
-      credits: 1000,
-      price: 34.99,
+      credits: 500,
+      price: 18,
       popular: false,
-      interviews: '50 interviews',
+      interviews: '~25 interviews',
       savings: '30% OFF'
     }
   ];

@@ -305,6 +305,11 @@ exports.submitInterview = async (req, res) => {
 
     const averageScore = Math.round(totalScore / interview.questions.length);
 
+    // Build normalized summary for quick/local flow
+    const { normalizeSummary } = require('../utils/summaryNormalizer');
+    const quickRaw = { type: 'quick', averageScore, perQuestionFeedback };
+    const normalizedSummary = normalizeSummary(quickRaw);
+
     // Save quick feedback document to the new Feedback collection using legacy fields to remain compatible
     const feedbackDoc = new FeedbackSummary({
       interviewId: interview._id,
@@ -316,23 +321,11 @@ exports.submitInterview = async (req, res) => {
         rawAnswers: (interview.questions || []).map((q, i) => (answers && answers[i]) || ''),
         rawFeedback: `Quick score: ${averageScore}. Basic feedback generated.`,
       },
-      // also populate summary for quick access
-      summary: {
-        averageScore,
-        perQuestionFeedback
-      }
+      // also populate normalized summary for quick access
+      summary: normalizedSummary
     });
 
     await feedbackDoc.save();
-
-    // Ensure perQuestionFeedback is stored in the feedback.summary (some older schema versions lacked this)
-    try {
-      await FeedbackSummary.findByIdAndUpdate(feedbackDoc._id, {
-        $set: { 'summary.perQuestionFeedback': perQuestionFeedback }
-      }, { new: true, runValidators: false });
-    } catch (uerr) {
-      console.warn('Unable to persist perQuestionFeedback into Feedback summary:', uerr?.message || uerr);
-    }
 
     // Update interview status, answers, and summary using native update
     const updateResult = await Interview.findByIdAndUpdate(
@@ -342,11 +335,7 @@ exports.submitInterview = async (req, res) => {
           answers: answersArray, // Save actual answers array
           status: 'completed',
           endTime: new Date(),
-          summary: {
-            type: 'quick',
-            averageScore,
-            perQuestionFeedback
-          }
+          summary: normalizedSummary
         } 
       },
       { runValidators: false, new: true }
