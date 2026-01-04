@@ -14,10 +14,9 @@ import CreditsBadge from "../components/common/CreditsBadge";
 const menuItems = [
   { label: "Dashboard", icon: <RiDashboardFill />, route: "/dashboard" },
   {
-    label: "Take Interview",
+    label: "Resume Interview",
     icon: <FaVideo />,
     route: "/dashboard/resume",
-    beta: true,
   },
   {
     label: "Progress Tracking",
@@ -112,11 +111,6 @@ const DashboardLayout = () => {
                 </span>
                 <span className="font-medium">{item.label}</span>
               </div>
-              {item.beta && (
-                <span className="relative z-10 ml-2 text-[10px] font-bold text-yellow-300 bg-yellow-600/30 backdrop-blur-sm px-2 py-0.5 rounded-full border border-yellow-500/40 shadow-sm">
-                  BETA
-                </span>
-              )}
             </Link>
           ))}
         </nav>

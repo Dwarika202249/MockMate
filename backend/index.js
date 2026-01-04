@@ -20,6 +20,14 @@ setupWorkers();
 
 app.use(cors());
 
+// Allow popups to communicate via postMessage (needed for OAuth popups)
+app.use((req, res, next) => {
+  // Allow popup windows to use window.postMessage back to the opener
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  // Leave COEP unset (default/unsafe-none) unless you intentionally need it
+  next();
+});
+
 app.use(express.json());
 
 //routes
