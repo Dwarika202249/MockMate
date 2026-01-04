@@ -8,11 +8,14 @@ import CreditPurchaseModal from './CreditPurchaseModal';
 const CreditsBadge = () => {
   const dispatch = useDispatch();
   const { balance, showLowBalanceWarning } = useSelector((state) => state.credits);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchCredits());
-  }, [dispatch]);
+    if (isAuthenticated) {
+      dispatch(fetchCredits());
+    }
+  }, [dispatch, isAuthenticated]);
 
   const isLowBalance = balance <= 20;
 

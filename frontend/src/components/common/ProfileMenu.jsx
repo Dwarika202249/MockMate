@@ -4,6 +4,7 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import { IoSettingsOutline } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSelector } from "react-redux";
 
 const ProfileMenu = ({ onSignOut }) => {
   const [userData, setUserData] = useState(null);
@@ -12,7 +13,18 @@ const ProfileMenu = ({ onSignOut }) => {
 
   const toggleDropdown = () => setOpen(!open);
 
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const authUser = useSelector((state) => state.auth.user);
+
   useEffect(() => {
+    // Prefer using centralized auth user from Redux; otherwise fetch when authenticated
+    if (authUser) {
+      setUserData(authUser);
+      return;
+    }
+
+    if (!isAuthenticated) return;
+
     const fetchUserData = async () => {
       try {
         const response = await axios.get(
@@ -30,7 +42,7 @@ const ProfileMenu = ({ onSignOut }) => {
     };
 
     fetchUserData();
-  }, []);
+  }, [isAuthenticated, authUser]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
