@@ -165,13 +165,49 @@ router.post('/save-parsed-resume', userAuth, async (req, res) => {
             resume.jobRole = 'Software Engineer';
         }
 
-        await resume.save();
+        try {
+            await resume.save();
+            res.status(201).json({
+                status: 'success',
+                message: 'Resume saved successfully',
+                resumeId: resume._id
+            });
+        } catch (saveErr) {
+            // Handle optimistic concurrency VersionError by performing an atomic update
+            if (saveErr.name === 'VersionError' || saveErr.message?.includes('No matching document')) {
+                console.warn('VersionError when saving resume, retrying with findByIdAndUpdate:', saveErr.message);
+                try {
+                    const updatePayload = {
+                        name: resume.name,
+                        email: resume.email,
+                        phone: resume.phone,
+                        location: resume.location,
+                        summary: resume.summary,
+                        jobRole: resume.jobRole,
+                        experience: resume.experience,
+                        education: resume.education,
+                        skills: resume.skills,
+                        certifications: resume.certifications,
+                        languages: resume.languages,
+                        'metadata.lastUpdated': new Date()
+                    };
 
-        res.status(201).json({
-            status: 'success',
-            message: 'Resume saved successfully',
-            resumeId: resume._id
-        });
+                    await Resume.findByIdAndUpdate(resume._id, { $set: updatePayload }, { new: true, runValidators: false });
+
+                    res.status(200).json({
+                        status: 'success',
+                        message: 'Resume updated successfully (retry via atomic update)',
+                        resumeId: resume._id
+                    });
+                } catch (updateErr) {
+                    console.error('Failed retrying resume update after VersionError:', updateErr);
+                    res.status(500).json({ message: 'Failed to save resume after retry', error: updateErr.message });
+                }
+            } else {
+                console.error('Error saving resume:', saveErr);
+                res.status(500).json({ message: 'Failed to save resume', error: saveErr.message });
+            }
+        }
     } catch (err) {
         console.error('Error saving resume:', err);
         res.status(500).json({ message: 'Failed to save resume', error: err.message });
