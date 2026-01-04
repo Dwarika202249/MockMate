@@ -18,6 +18,13 @@ const server = http.createServer(app);
 const io = setupWebSocket(server);
 setupWorkers();
 
+// Background job: release stale credit reservations (run every 10 minutes)
+const { releaseStaleReservations } = require('./utils/creditManager');
+const RESERVATION_TTL_MIN = parseInt(process.env.RESERVATION_TTL_MIN || '60', 10);
+setInterval(() => {
+  releaseStaleReservations(RESERVATION_TTL_MIN).catch(err => console.error('Error running stale reservation release job:', err));
+}, 10 * 60 * 1000);
+
 app.use(cors());
 
 // Allow popups to communicate via postMessage (needed for OAuth popups)
@@ -36,6 +43,7 @@ app.use('/api/interview', interviewRoutes);
 app.use('/api/resume-parser', resumeParserRoute);
 app.use('/api/credits', creditsRoutes);
 app.use('/api/feedback', require('./routes/feedback'));
+app.use('/api/quizzes', require('./routes/quiz'));
 
 //mongodb connection
 const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/";

@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const CreditEvent = require('../models/CreditEventSchema');
+const CreditReservation = require('../models/CreditReservationSchema');
 
 // Credit cost configuration
 const CREDIT_COSTS = {
@@ -70,6 +71,37 @@ async function consumeCredits(userId, amount, reason, meta = {}) {
     throw error;
   }
 }
+
+// Add credits back to user (used for releasing reservations)
+async function addCredits(userId, amount, reason, meta = {}) {
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $inc: { credits: amount } },
+      { new: true }
+    );
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    await CreditEvent.create({
+      user: userId,
+      type: 'grant',
+      amount: amount,
+      balanceAfter: user.credits,
+      reason,
+      meta
+    });
+
+    return { success: true, balance: user.credits };
+
+  } catch (err) {
+    console.error('Error adding credits:', err);
+    throw err;
+  }
+}
+
 
 /**
  * Get credit cost for an interview type
@@ -174,13 +206,67 @@ async function consumeSummaryCredits(userId, interviewId, interviewType) {
   );
 }
 
+async function reserveCreditsForQuiz(userId, quizId, amount) {
+  // Ensure user has enough credits
+  const has = await checkCredits(userId, amount);
+  if (!has) return { success: false, message: 'Insufficient credits' };
+
+  // Atomically consume credits and create reservation
+  const consumeRes = await consumeCredits(userId, amount, 'Reserve Quiz Credits', { quizId });
+  const reservation = await CreditReservation.create({ user: userId, quizId, amount, status: 'reserved' });
+  return { success: true, id: reservation._id, balance: consumeRes.balance };
+}
+
+async function commitReservedCredits(reservationId) {
+  const reservation = await CreditReservation.findById(reservationId);
+  if (!reservation) throw new Error('Reservation not found');
+  if (reservation.status !== 'reserved') return { success: false, message: 'Reservation not active' };
+  reservation.status = 'committed';
+  await reservation.save();
+  return { success: true };
+}
+
+async function releaseReservedCredits(reservationId) {
+  const reservation = await CreditReservation.findById(reservationId);
+  if (!reservation) throw new Error('Reservation not found');
+  if (reservation.status !== 'reserved') return { success: false, message: 'Reservation not active' };
+
+  // Add credits back to user
+  await addCredits(reservation.user, reservation.amount, 'Release Reserved Quiz Credits', { quizId: reservation.quizId });
+  reservation.status = 'released';
+  await reservation.save();
+  return { success: true };
+}
+
+// Release reservations older than TTL minutes
+async function releaseStaleReservations(ttlMinutes = 60) {
+  const cutoff = new Date(Date.now() - ttlMinutes * 60 * 1000);
+  const stale = await CreditReservation.find({ status: 'reserved', createdAt: { $lt: cutoff } });
+  for (const r of stale) {
+    try {
+      await releaseReservedCredits(r._id);
+      console.info('Released stale reservation', r._id.toString());
+    } catch (err) {
+      console.warn('Failed to release stale reservation', r._id.toString(), err.message);
+    }
+  }
+  return { released: stale.length };
+}
+
+
 module.exports = {
   CREDIT_COSTS,
   checkCredits,
   consumeCredits,
+  addCredits,
   getCreditCost,
   checkInterviewCredits,
   consumeQuestionGenerationCredits,
   consumeAnswerEvaluationCredits,
-  consumeSummaryCredits
+  consumeSummaryCredits,
+  reserveCreditsForQuiz,
+  commitReservedCredits,
+  releaseReservedCredits,
+  // For background job
+  releaseStaleReservations
 };

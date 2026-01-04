@@ -25,6 +25,12 @@ import ResumePage from "../pages/Interview/ResumePage";
 import ResumeInterviewPage from "../pages/Interview/ResumeInterviewPage";
 import FeedbackPage from "../pages/Feedback/FeedbackPage";
 
+// Quizzes
+import QuizzesPage from "../pages/Quizzes/QuizzesPage";
+import QuizDetailPage from "../pages/Quizzes/QuizDetailPage";
+import AttemptPage from "../pages/Quizzes/AttemptPage";
+import ResultPage from "../pages/Quizzes/ResultPage";
+
 const PrivateRoute = ({ element }) => {
   return isAuthenticated() ? element : <Navigate to="/login" />;
 };
@@ -74,6 +80,10 @@ function AppRoutes() {
           <Route index element={<Dashboard />} />
           <Route path="progress" element={<Progress />} />
           <Route path="resume" element={<ResumePage />} />
+          <Route path="quizzes" element={<QuizzesPage />} />
+          <Route path="quizzes/:id" element={<QuizDetailPage />} />
+          <Route path="quizzes/:id/attempt/:attemptId" element={<AttemptPage />} />
+          <Route path="quizzes/:id/result/:attemptId" element={<ResultPage />} />
           <Route path="interview-history" element={<InterviewHistory />} />
           <Route path="faqs" element={<FAQs />} />
           <Route path="settings" element={<Settings />} />

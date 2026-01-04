@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FaBars, FaTimes } from "react-icons/fa";
+import { FaBars, FaRocket, FaTimes } from "react-icons/fa";
 import { RiDashboardFill } from "react-icons/ri";
 import { FaVideo } from "react-icons/fa";
 import { MdTrendingUp } from "react-icons/md";
@@ -10,6 +10,7 @@ import { FiHelpCircle } from "react-icons/fi";
 import { MdLogout } from "react-icons/md";
 import ProfileMenu from "../components/common/ProfileMenu";
 import CreditsBadge from "../components/common/CreditsBadge";
+import ActiveQuizNotifier from "../components/quizzes/ActiveQuizNotifier";
 
 const menuItems = [
   { label: "Dashboard", icon: <RiDashboardFill />, route: "/dashboard" },
@@ -19,12 +20,17 @@ const menuItems = [
     route: "/dashboard/resume",
   },
   {
+    label: "Quizzes",
+    icon: <FaRocket />,
+    route: "/dashboard/quizzes",
+  },
+  {
     label: "Progress Tracking",
     icon: <MdTrendingUp />,
     route: "/dashboard/progress",
   },
   {
-    label: "Interview History",
+    label: "History",
     icon: <FaHistory />,
     route: "/dashboard/interview-history",
   },
@@ -148,6 +154,7 @@ const DashboardLayout = () => {
           {/* Header Bar */}
           <div className="flex justify-end items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
             <CreditsBadge />
+            <ActiveQuizNotifier />
             <ProfileMenu onSignOut={handleLogout} />
           </div>
           <Outlet />

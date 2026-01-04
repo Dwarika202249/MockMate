@@ -544,6 +544,84 @@ function performLocalEvaluation(question, answer) {
 }
 
 // ============================================
+// QUIZ GENERATION
+// ============================================
+
+async function generateQuizWithGroq({ tech, numQuestions = 5, difficulty = 'medium' }) {
+    if (!GROQ_API_KEY) return null;
+
+    const prompt = `You are an expert technical educator. Generate exactly ${numQuestions} multiple-choice questions for ${tech}.
+Difficulty: ${difficulty}
+
+Return ONLY a JSON array with this structure:
+[
+  {
+    "id": "q1",
+    "text": "Question text?",
+    "scoringType": "single|multiple",
+    "partialScoring": false,
+    "maxPoints": 1,
+    "choices": [
+      { "id": "c1", "text": "Choice A", "isCorrect": true },
+      { "id": "c2", "text": "Choice B", "isCorrect": false }
+    ]
+  }
+]
+`;
+
+    try {
+        const response = await axios.post(GROQ_API_URL, {
+            model: GROQ_MODEL_EVAL,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            max_tokens: 1200,
+            response_format: { type: 'json_object' }
+        }, { headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 8000 });
+
+        const text = response.data.choices?.[0]?.message?.content || '';
+        const match = text.match(/\[[\s\S]*\]/);
+        if (match) {
+            const arr = JSON.parse(match[0]);
+            return arr;
+        }
+    } catch (err) {
+        console.warn('⚠️ generateQuizWithGroq failed:', err.message);
+    }
+
+    return null;
+}
+
+function generateQuizLocal({ tech, numQuestions = 5, difficulty = 'easy' }) {
+    // Simple fallback: turn stored simple questions into MCQs with generic distractors
+    const datasetKey = Object.keys(PRE_STORED_QUESTIONS).find(k => tech.toLowerCase().includes(k.toLowerCase())) || 'Frontend Engineer';
+    const pool = PRE_STORED_QUESTIONS[datasetKey] || PRE_STORED_QUESTIONS['Frontend Engineer'];
+    const selected = pool.slice(0, Math.min(numQuestions, pool.length));
+
+    return selected.map((s, idx) => ({
+        id: `q${idx + 1}`,
+        text: s.text,
+        scoringType: 'single',
+        partialScoring: false,
+        maxPoints: 1,
+        choices: [
+            { id: 'c1', text: s.text.split(' ').slice(0,6).join(' ') + ' (Correct)', isCorrect: true },
+            { id: 'c2', text: 'A common misunderstanding', isCorrect: false },
+            { id: 'c3', text: 'Another wrong option', isCorrect: false },
+            { id: 'c4', text: 'Possibly confusing option', isCorrect: false }
+        ]
+    }));
+}
+
+async function generateQuizWithFailover({ tech, numQuestions = 5, difficulty = 'easy' }) {
+    // Try Groq first
+    const groq = await generateQuizWithGroq({ tech, numQuestions, difficulty });
+    if (groq && Array.isArray(groq) && groq.length > 0) return groq;
+
+    // Fallback local
+    return generateQuizLocal({ tech, numQuestions, difficulty });
+}
+
+// ============================================
 // EXPORTS
 // ============================================
 
@@ -552,5 +630,6 @@ module.exports = {
     evaluateAnswerWithFailover,
     generateSummaryWithFailover,
     performLocalEvaluation,
-    formatQuestionsForSchema
+    formatQuestionsForSchema,
+    generateQuizWithFailover
 };
