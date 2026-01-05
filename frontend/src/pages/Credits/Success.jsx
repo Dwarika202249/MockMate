@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import CreditsService from '../../services/CreditsService';
+import { isAuthenticated } from '../../utils/auth';
 
 const CreditSuccessPage = () => {
   const { search } = useLocation();
@@ -62,30 +63,44 @@ const CreditSuccessPage = () => {
     return () => { mounted = false; clearInterval(interval); };
   }, [sessionId]);
 
+  const auth = isAuthenticated();
+
   return (
     <div className="max-w-3xl mx-auto py-16 px-4">
       <div className="bg-white/5 p-8 rounded-2xl text-center">
         <h2 className="text-2xl font-bold text-white mb-2">Payment Success</h2>
         <p className="text-gray-300 mb-4">Thank you for your purchase. Session: <span className="text-sm text-gray-400">{sessionId || '—'}</span></p>
 
-        <div className="mb-4">
-          {loading ? (
-            <div className="flex items-center justify-center gap-4">
-              <div className="loader-border w-10 h-10 rounded-full border-4 border-white/10 border-t-purple-400 animate-spin" />
-              <div className="text-gray-300">{message}</div>
+        {!auth ? (
+          <div className="mb-4">
+            <div className="text-lg text-gray-300">You are not signed in.</div>
+            <div className="text-sm text-gray-400 mt-2">Please <Link to={`/login?next=/credits/success?session_id=${sessionId || ''}`} className="text-purple-300 underline">sign in</Link> to claim your credits. After signing in, return to this page and click <strong>Refresh</strong>.</div>
+            <div className="mt-4 text-sm text-gray-400">If you believe this is an error, contact support with your session ID.</div>
+            <div className="flex justify-center gap-3 mt-6">
+              <button onClick={() => navigate('/pricing')} className="px-6 py-3 rounded-lg bg-white/5 text-white">Back to Pricing</button>
+              <button onClick={() => navigate('/login')} className="px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white">Sign in</button>
             </div>
-          ) : (
-            <>
-              <div className="text-lg text-gray-300">{message}</div>
-              <div className="mt-4 text-3xl font-bold text-white">Balance: {balance ?? '—'} credits</div>
-            </>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="mb-4">
+            {loading ? (
+              <div className="flex items-center justify-center gap-4">
+                <div className="loader-border w-10 h-10 rounded-full border-4 border-white/10 border-t-purple-400 animate-spin" />
+                <div className="text-gray-300">{message}</div>
+              </div>
+            ) : (
+              <>
+                <div className="text-lg text-gray-300">{message}</div>
+                <div className="mt-4 text-3xl font-bold text-white">Balance: {balance ?? '—'} credits</div>
+              </>
+            )}
 
-        <div className="flex justify-center gap-3 mt-6">
-          <button onClick={() => navigate('/dashboard')} className="px-6 py-3 rounded-lg bg-white/5 text-white">Go to Dashboard</button>
-          <button onClick={() => { window.location.reload(); }} className="px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white">Refresh</button>
-        </div>
+            <div className="flex justify-center gap-3 mt-6">
+              <button onClick={() => navigate('/dashboard')} className="px-6 py-3 rounded-lg bg-white/5 text-white">Go to Dashboard</button>
+              <button onClick={() => { window.location.reload(); }} className="px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white">Refresh</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

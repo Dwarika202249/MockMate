@@ -97,8 +97,8 @@ function AppRoutes() {
         <Route path="/interview/:interviewId" element={<FreeInterviewPage />} />
         <Route path="/history/:interviewId/details" element={<InterviewDetails />} />
         {/* Stripe redirect helpers (top-level so Stripe can return here) */}
-        <Route path="/credits/success" element={<PrivateRoute element={<CreditSuccessPage />} />} />
-        <Route path="/credits/cancel" element={<PrivateRoute element={<CreditCancelPage />} />} />
+        <Route path="/credits/success" element={<CreditSuccessPage />} />
+        <Route path="/credits/cancel" element={<CreditCancelPage />} />
       </Routes>
   );
 }
