@@ -14,7 +14,8 @@ exports.getFeedbackByInterviewId = async (req, res) => {
     }
 
     const feedback = await Feedback.findOne({ interviewId }).lean();
-    if (!feedback) return res.status(404).json({ msg: 'Feedback not found' });
+    // If there's no feedback yet, return a successful (200) response with null feedback
+    if (!feedback) return res.status(200).json({ feedback: null });
 
     res.json({ feedback });
   } catch (err) {
