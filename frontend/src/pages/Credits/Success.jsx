@@ -15,6 +15,7 @@ const CreditSuccessPage = () => {
   const [attemptsLeft, setAttemptsLeft] = useState(15);
   const [confirmed, setConfirmed] = useState(false);
   const [countdown, setCountdown] = useState(3);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -26,8 +27,24 @@ const CreditSuccessPage = () => {
         // First try verify-session for immediate confirmation
         if (sessionId) {
           try {
-            const verify = await fetch('/api/credits/verify-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId }) });
-            const v = await verify.json();
+            const base = import.meta.env.VITE_BASE_URL || '';
+            const verifyResp = await fetch(`${base}/api/credits/verify-session`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId })
+            });
+
+            // If route not found in production (proxy/mount issue), redirect immediately
+            if (verifyResp.status === 404) {
+              console.warn('verify-session endpoint returned 404. Redirecting to dashboard.');
+              setLoading(false);
+              setMessage('Verification endpoint not available; redirecting to dashboard. Your credits may take a few minutes to appear.');
+              // mark for redirect to avoid navigating during render
+              setShouldRedirect(true);
+              return;
+            }
+
+            const v = await verifyResp.json();
             if (v && (v.status === 'credited' || v.status === 'already_credited')) {
               setBalance(v.balance);
               setLoading(false);
@@ -37,8 +54,16 @@ const CreditSuccessPage = () => {
               clearInterval(interval);
               return;
             }
+
+            // If verify responded but did not credit, continue to polling (webhook may credit later)
           } catch (e) {
-            // ignore verification errors and fall back to polling
+            console.error('verify-session error:', e);
+            // If network error to verify endpoint, redirect to dashboard as fallback to avoid hanging UI
+            setLoading(false);
+            setMessage('Unable to verify payment immediately; redirecting to dashboard. Your credits may take a few minutes to appear.');
+            // mark for redirect to avoid navigating during render
+            setShouldRedirect(true);
+            return;
           }
         }
 
@@ -93,26 +118,38 @@ const CreditSuccessPage = () => {
       setCountdown(c => {
         if (c <= 1) {
           clearInterval(timer);
-          navigate('/dashboard');
+          // mark for redirect to avoid navigating during render
+          setShouldRedirect(true);
           return 0;
         }
         return c - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [confirmed, navigate]);
+  }, [confirmed]);
 
-  // fallback: if we don't detect confirmation within 8s, redirect to homepage
+  // fallback: if we don't detect confirmation within 8s, redirect to dashboard
   useEffect(() => {
     const fallback = setTimeout(() => {
       if (!confirmed) {
-        navigate('/dashboard');
+        // mark for redirect to avoid navigating during render
+        setShouldRedirect(true);
       }
     }, 8000);
     return () => clearTimeout(fallback);
-  }, [confirmed, navigate]);
+  }, [confirmed]);
 
   const auth = isAuthenticated();
+
+  // perform navigation in a single effect to avoid setState-in-render issues
+  useEffect(() => {
+    if (!shouldRedirect) return;
+    // small delay to ensure we're outside any render/update cycle
+    const t = setTimeout(() => {
+      navigate('/dashboard');
+    }, 0);
+    return () => clearTimeout(t);
+  }, [shouldRedirect, navigate]);
 
   return (
     <div className="max-w-3xl mx-auto py-16 px-4">
