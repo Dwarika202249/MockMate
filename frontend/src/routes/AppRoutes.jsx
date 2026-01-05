@@ -30,6 +30,8 @@ import QuizzesPage from "../pages/Quizzes/QuizzesPage";
 import QuizDetailPage from "../pages/Quizzes/QuizDetailPage";
 import AttemptPage from "../pages/Quizzes/AttemptPage";
 import ResultPage from "../pages/Quizzes/ResultPage";
+import CreditSuccessPage from "../pages/Credits/Success";
+import CreditCancelPage from "../pages/Credits/Cancel";
 
 const PrivateRoute = ({ element }) => {
   return isAuthenticated() ? element : <Navigate to="/login" />;
@@ -87,11 +89,16 @@ function AppRoutes() {
           <Route path="interview-history" element={<InterviewHistory />} />
           <Route path="faqs" element={<FAQs />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="credits/success" element={<CreditSuccessPage />} />
+          <Route path="credits/cancel" element={<CreditCancelPage />} />
         </Route>
         <Route path="/resume-interview/:interviewId" element={<ResumeInterviewPage />} />
         <Route path="/interview/prepare/:interviewId" element={<PrivateRoute element={<FreeInterviewPreparationPage />} />} />
         <Route path="/interview/:interviewId" element={<FreeInterviewPage />} />
         <Route path="/history/:interviewId/details" element={<InterviewDetails />} />
+        {/* Stripe redirect helpers (top-level so Stripe can return here) */}
+        <Route path="/credits/success" element={<PrivateRoute element={<CreditSuccessPage />} />} />
+        <Route path="/credits/cancel" element={<PrivateRoute element={<CreditCancelPage />} />} />
       </Routes>
   );
 }

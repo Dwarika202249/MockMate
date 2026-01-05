@@ -45,6 +45,12 @@ const CreditsService = {
       console.error('Error purchasing credits:', error);
       throw error;
     }
+  },
+
+  // Create a Stripe Checkout session for the selected pack
+  createCheckoutSession: async (packId) => {
+    const resp = await api.post('/api/credits/checkout', { packId });
+    return resp.data;
   }
 };
 

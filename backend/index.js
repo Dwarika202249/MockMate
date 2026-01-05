@@ -35,6 +35,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Stripe webhook needs raw body parser and must be mounted BEFORE express.json()
+if (process.env.STRIPE_WEBHOOK_SECRET) {
+  app.post('/webhook/stripe', express.raw({ type: 'application/json' }), require('./controllers/creditsController').stripeWebhook);
+} else {
+  // If no webhook secret configured, still allow webhook parsing (dev), but use JSON and controller will handle it
+  app.post('/webhook/stripe', express.json(), require('./controllers/creditsController').stripeWebhook);
+}
+
 app.use(express.json());
 
 //routes

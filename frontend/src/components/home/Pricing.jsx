@@ -114,6 +114,21 @@ const Pricing = () => {
                         </ul>
       
                         <button
+                          onClick={async () => {
+                            try {
+                              const packId = pkg.popular ? 'pro' : pkg.credits === 100 ? 'basic' : 'premium';
+                              const CreditsService = (await import('../../services/CreditsService')).default;
+                              const data = await CreditsService.createCheckoutSession(packId);
+                              if (data && data.url) {
+                                window.location.href = data.url;
+                              } else {
+                                alert('Failed to start checkout');
+                              }
+                            } catch (err) {
+                              console.error(err);
+                              alert('Failed to start checkout');
+                            }
+                          }}
                           className={`w-full py-4 rounded-full font-semibold transition-all duration-300 ${
                             pkg.popular
                               ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-purple-500/50'

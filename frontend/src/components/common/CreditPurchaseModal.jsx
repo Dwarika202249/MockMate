@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaCoins, FaTimes, FaCreditCard, FaCheckCircle } from 'react-icons/fa';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import CreditsService from '../../services/CreditsService';
 
 const CreditPurchaseModal = ({ show, onClose, currentBalance }) => {
   const [selectedPack, setSelectedPack] = useState(null);
@@ -38,13 +39,20 @@ const CreditPurchaseModal = ({ show, onClose, currentBalance }) => {
 
   const handlePurchase = async () => {
     if (!selectedPack) return;
-    
     setProcessing(true);
-    // TODO: Integrate Stripe payment here
-    setTimeout(() => {
+    try {
+      const res = await CreditsService.createCheckoutSession(selectedPack.id);
+      if (res && res.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = res.url;
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to create checkout session', err);
+      alert('Failed to start payment. Please try again.');
+    } finally {
       setProcessing(false);
-      onClose();
-    }, 2000);
+    }
   };
 
   if (!show) return null;

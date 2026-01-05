@@ -15,6 +15,9 @@ router.post('/consume', auth, creditsController.consumeCredits);
 // Purchase credits (called by Stripe webhook or purchase flow)
 router.post('/purchase', auth, creditsController.purchaseCredits);
 
+// Create Stripe Checkout Session (client uses this to redirect to Stripe)
+router.post('/checkout', auth, creditsController.createCheckoutSession);
+
 // Grant credits (admin/system)
 router.post('/grant', auth, creditsController.grantCredits);
 
