@@ -13,6 +13,8 @@ const CreditSuccessPage = () => {
   const [balance, setBalance] = useState(null);
   const [message, setMessage] = useState('Processing your payment...');
   const [attemptsLeft, setAttemptsLeft] = useState(15);
+  const [confirmed, setConfirmed] = useState(false);
+  const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     let mounted = true;
@@ -21,6 +23,25 @@ const CreditSuccessPage = () => {
 
     const refresh = async () => {
       try {
+        // First try verify-session for immediate confirmation
+        if (sessionId) {
+          try {
+            const verify = await fetch('/api/credits/verify-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId }) });
+            const v = await verify.json();
+            if (v && (v.status === 'credited' || v.status === 'already_credited')) {
+              setBalance(v.balance);
+              setLoading(false);
+              setMessage('Payment confirmed — your credits have been updated.');
+              setConfirmed(true);
+              setCountdown(3);
+              clearInterval(interval);
+              return;
+            }
+          } catch (e) {
+            // ignore verification errors and fall back to polling
+          }
+        }
+
         const resp = await CreditsService.getCredits();
         if (!mounted) return;
         // first fetch sets baseline
@@ -34,6 +55,8 @@ const CreditSuccessPage = () => {
           if (resp.balance > initialBalance) {
             setLoading(false);
             setMessage('Payment complete — your credits have been updated.');
+            setConfirmed(true);
+            setCountdown(3);
             clearInterval(interval);
           }
         }
@@ -62,6 +85,32 @@ const CreditSuccessPage = () => {
 
     return () => { mounted = false; clearInterval(interval); };
   }, [sessionId]);
+
+  // when confirmed, start countdown and navigate to homepage
+  useEffect(() => {
+    if (!confirmed) return;
+    const timer = setInterval(() => {
+      setCountdown(c => {
+        if (c <= 1) {
+          clearInterval(timer);
+          navigate('/dashboard');
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [confirmed, navigate]);
+
+  // fallback: if we don't detect confirmation within 8s, redirect to homepage
+  useEffect(() => {
+    const fallback = setTimeout(() => {
+      if (!confirmed) {
+        navigate('/dashboard');
+      }
+    }, 8000);
+    return () => clearTimeout(fallback);
+  }, [confirmed, navigate]);
 
   const auth = isAuthenticated();
 
@@ -92,6 +141,9 @@ const CreditSuccessPage = () => {
               <>
                 <div className="text-lg text-gray-300">{message}</div>
                 <div className="mt-4 text-3xl font-bold text-white">Balance: {balance ?? '—'} credits</div>
+                {confirmed && (
+                  <div className="mt-3 text-sm text-gray-400">Redirecting to dashboard in <span className="font-semibold text-white">{countdown}</span>s...</div>
+                )}
               </>
             )}
 

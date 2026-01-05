@@ -18,6 +18,9 @@ router.post('/purchase', auth, creditsController.purchaseCredits);
 // Create Stripe Checkout Session (client uses this to redirect to Stripe)
 router.post('/checkout', auth, creditsController.createCheckoutSession);
 
+// Verify a checkout session and (idempotently) apply credits if paid
+router.post('/verify-session', creditsController.verifyCheckoutSession);
+
 // Grant credits (admin/system)
 router.post('/grant', auth, creditsController.grantCredits);
 

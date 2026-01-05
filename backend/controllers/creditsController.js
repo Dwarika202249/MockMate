@@ -268,6 +268,59 @@ exports.stripeWebhook = async (req, res) => {
   res.status(200).json({ received: true });
 };
 
+// Verify a checkout session and apply credits immediately if paid (idempotent)
+exports.verifyCheckoutSession = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ message: 'sessionId required' });
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+
+    const metadata = session.metadata || {};
+    const userId = metadata.userId;
+    const packId = metadata.packId;
+    const credits = parseInt(metadata.credits || 0);
+    const paymentId = session.id;
+
+    if (session.payment_status !== 'paid') {
+      return res.json({ status: 'pending', payment_status: session.payment_status });
+    }
+
+    if (!userId || !credits) {
+      return res.status(400).json({ message: 'Session missing metadata' });
+    }
+
+    // Idempotent crediting
+    const existing = await CreditEvent.findOne({ 'meta.paymentId': paymentId });
+    if (existing) {
+      const user = await User.findById(userId).select('credits');
+      return res.json({ status: 'already_credited', balance: user.credits });
+    }
+
+    const user = await User.findByIdAndUpdate(userId, { $inc: { credits } }, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    await CreditEvent.create({
+      user: userId,
+      type: 'purchase',
+      amount: credits,
+      balanceAfter: user.credits,
+      reason: 'Stripe purchase (verified)',
+      meta: { paymentId, packId }
+    });
+
+    if (user.credits > 20) {
+      await User.findByIdAndUpdate(userId, { lowCreditNotificationSent: false });
+    }
+
+    return res.json({ status: 'credited', balance: user.credits });
+  } catch (err) {
+    console.error('Error verifying checkout session:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Grant credits (admin/system use)
 exports.grantCredits = async (req, res) => {
   try {
