@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useNavigate } from 'react-router-dom';
 import { 
   FaCheckCircle,
   FaStar, 
@@ -40,6 +41,8 @@ const creditPackages = [
   ];
 
 const Pricing = () => {
+  const navigate = useNavigate();
+
   return (
     <section
       className="relative text-white py-20 px-6 bg-gradient-to-br from-[#0a0118] via-[#1a0b2e] to-[#0f0520] text-center sm:px-8 lg:px-32 z-10 overflow-hidden"
@@ -122,11 +125,13 @@ const Pricing = () => {
                               if (data && data.url) {
                                 window.location.href = data.url;
                               } else {
-                                alert('Failed to start checkout');
+                                // Not authenticated or checkout couldn't start — send user to login
+                                navigate('/login?next=/pricing');
                               }
                             } catch (err) {
                               console.error(err);
-                              alert('Failed to start checkout');
+                              // On error (likely not authenticated), redirect to login so user can sign in
+                              navigate('/login?next=/pricing');
                             }
                           }}
                           className={`w-full py-4 rounded-full font-semibold transition-all duration-300 ${
